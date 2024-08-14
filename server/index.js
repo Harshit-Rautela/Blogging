@@ -17,7 +17,7 @@ app.use(cors());
 
 
 app.get("/", (request, response) => {
-  console.log(request);
+  console.log('the request is : ',request);
   return response.status(234).send("Welcome To Blogging");
 });
 app.use(express.json());
