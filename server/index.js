@@ -21,7 +21,7 @@ app.use(express.json());
 
 app.get("/", (request, response) => {
   console.log('the request is : ',request);
-  return response.status(234).send("Welcome To Blogging");
+  return response.status(200).send("Welcome To Blogging");
 });
 app.use("/auth", [Userrouter]);
 app.use("/", [Blogrouter]);
