@@ -13,10 +13,7 @@ const PORT = process.env.PORT || 5000;
 
 
 
-app.use(cors({
-  origin: 'https://blogging-aahn.vercel.app' ,
-
-}));
+app.use(cors());
 
 
 app.get("/", (request, response) => {
