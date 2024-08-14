@@ -5,7 +5,7 @@ import axios from 'axios';
 // Function to create a blog
 export const createBlog = async (blogData, token) => {
   try {
-    const response = await axios.post('https://blogging-ten-nu.vercel.app/', blogData, {
+    const response = await axios.post('http://blogging-ten-nu.vercel.app/', blogData, {
       headers: {
         'x-auth-token': token,
         'Content-Type': 'multipart/form-data'
@@ -21,7 +21,7 @@ export const createBlog = async (blogData, token) => {
 // Function to get all blogs for the logged-in user
 export const getUserBlogs = async (token) => {
   try {
-    const response = await axios.get('https://blogging-ten-nu.vercel.app/user', {
+    const response = await axios.get('http://blogging-ten-nu.vercel.app/user', {
       headers: { 'x-auth-token': token },
     });
     return response.data;
@@ -34,7 +34,7 @@ export const getUserBlogs = async (token) => {
 // Function to get a blog by ID
 export const getBlogById = async (id, token) => {
   try {
-    const response = await axios.get(`https://blogging-ten-nu.vercel.app/${id}`, {
+    const response = await axios.get(`http://blogging-ten-nu.vercel.app/${id}`, {
       headers: { 'x-auth-token': token },
     });
     return response.data;
@@ -47,7 +47,7 @@ export const getBlogById = async (id, token) => {
 // Function to update a blog by ID
 export const updateBlog = async (id, updatedBlog, token) => {
   try {
-    const response = await axios.put(`https://blogging-ten-nu.vercel.app/${id}`, updatedBlog, {
+    const response = await axios.put(`http://blogging-ten-nu.vercel.app/${id}`, updatedBlog, {
       headers: { 'x-auth-token': token }
     });
     return response.data;
@@ -60,7 +60,7 @@ export const updateBlog = async (id, updatedBlog, token) => {
 // Function to delete a blog by ID
 export const deleteBlog = async (id, token) => {
   try {
-    await axios.delete(`https://blogging-ten-nu.vercel.app/${id}`, {
+    await axios.delete(`http://blogging-ten-nu.vercel.app/${id}`, {
       headers: { 'x-auth-token': token }
     });
   } catch (err) {
