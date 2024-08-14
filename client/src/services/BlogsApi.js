@@ -1,17 +1,11 @@
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: 'https://blogging-ten-nu.vercel.app',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+//const BASE_URL = 'https://blogging-ten-nu.vercel.app';
 
 // Function to create a blog
 export const createBlog = async (blogData, token) => {
   try {
-
-    const response = await api.post('/', blogData, { // Adjust the endpoint as needed
+    const response = await axios.post('https://blogging-ten-nu.vercel.app/', blogData, {
       headers: {
         'x-auth-token': token,
         'Content-Type': 'multipart/form-data'
@@ -23,48 +17,54 @@ export const createBlog = async (blogData, token) => {
     throw error;
   }
 };
+
 // Function to get all blogs for the logged-in user
 export const getUserBlogs = async (token) => {
-  const response = await api.get('/user', {
-    headers: { 'x-auth-token': token },
-  });
-  return response.data;
+  try {
+    const response = await axios.get('https://blogging-ten-nu.vercel.app/user', {
+      headers: { 'x-auth-token': token },
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error getting user blogs:", error.response ? error.response.data : error.message);
+    throw error;
+  }
 };
 
-
-// // Function to get a blog by ID
-export const  getBlogById = async(id,token)=>{
+// Function to get a blog by ID
+export const getBlogById = async (id, token) => {
   try {
-    const response = await api.get(`/${id}`,{
-      headers:{'x-auth-token':token},
-    })
+    const response = await axios.get(`https://blogging-ten-nu.vercel.app/${id}`, {
+      headers: { 'x-auth-token': token },
+    });
     return response.data;
   } catch (err) {
-    console.error("Error getting blog:" ,err);      
+    console.error("Error getting blog:", err);
+    throw err;
   }
-}
+};
 
- // Function to update a blog by ID
- export const updateBlog = async(id, updatedBlog, token)=>{
+// Function to update a blog by ID
+export const updateBlog = async (id, updatedBlog, token) => {
   try {
-    const response = await api.put(`/${id}`, updatedBlog, {
-      headers:{'x-auth-token':token}
-    })
+    const response = await axios.put(`https://blogging-ten-nu.vercel.app/${id}`, updatedBlog, {
+      headers: { 'x-auth-token': token }
+    });
     return response.data;
   } catch (err) {
-    console.error("Error updating blog:" ,err);      
-  }  
- }
+    console.error("Error updating blog:", err);
+    throw err;
+  }
+};
 
-//  Function to delete a blog by ID
-export const deleteBlog = async(id, token)=>{
+// Function to delete a blog by ID
+export const deleteBlog = async (id, token) => {
   try {
-    await api.delete(`/${id}`,{
-      headers:{'x-auth-token':token}
-    })
+    await axios.delete(`https://blogging-ten-nu.vercel.app/${id}`, {
+      headers: { 'x-auth-token': token }
+    });
   } catch (err) {
     console.error("Error deleting blog:", err);
+    throw err;
   }
-}
-
-export default api;
+};
