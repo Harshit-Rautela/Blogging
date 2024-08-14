@@ -11,16 +11,19 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
-app.use(express.json());
+
+
 app.use(cors({
-  origin: 'https://blogging-aahn.vercel.app' 
+  origin: 'https://blogging-aahn.vercel.app' ,
+
 }));
+
 
 app.get("/", (request, response) => {
   console.log(request);
   return response.status(234).send("Welcome To Blogging");
 });
-
+app.use(express.json());
 app.use("/auth", [Userrouter]);
 app.use("/", [Blogrouter]);
 
