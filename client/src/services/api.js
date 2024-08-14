@@ -27,5 +27,3 @@ export const loginUser = async (userData) => {
       throw error; // Rethrow the error to handle it in the component
     }
   };
-
-  export default api;
