@@ -3,8 +3,13 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User} from '../models/Model.js';
 import auth from '../middleware/Auth.js'
-const router = express.Router();
+import dotenv from 'dotenv';
 
+// Initialize environment variables
+dotenv.config();
+
+const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET; 
 // Register a new user
 router.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
@@ -32,7 +37,7 @@ router.post('/register', async (req, res) => {
 
     // Generate a JWT token
     const payload = { userId: user.id };
-    const token = jwt.sign(payload, 'your_jwt_secret', { expiresIn: '1h' });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
 
     // The server sends the generated JWT token back to the client in the response
     res.status(201).json({ token, user: { name: user.name, email: user.email } });
@@ -59,7 +64,7 @@ router.post('/register', async (req, res) => {
   
       // Generate a JWT token
       const payload = { userId: user._id };
-      const token = jwt.sign(payload, 'your_jwt_secret', { expiresIn: '1h' });
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
   
       // Respond with the token
       res.json({ token });
