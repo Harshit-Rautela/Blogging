@@ -5,7 +5,7 @@ import axios from 'axios';
 // Function to create a blog
 export const createBlog = async (blogData, token) => {
   try {
-    const response = await axios.post('https://blogging-theta-sand.vercel.app/create', blogData, {
+    const response = await axios.post('https://blogging-theta-sand.vercel.app', blogData, {
       headers: {
         'x-auth-token': token,
         'Content-Type': 'multipart/form-data'
