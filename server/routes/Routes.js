@@ -8,7 +8,7 @@ import uploadOnCloudinary from '../utils/Cloudinary.js'; // Import the Cloudinar
 const router = express.Router();
 
 // Create a new blog
-router.post('/',auth, upload.single('file'), async (req, res) => {
+router.post('/create',auth, upload.single('file'), async (req, res) => {
   const { title, content } = req.body;
   //remember title and content will come in req.body while image will be in req.file
   try {
