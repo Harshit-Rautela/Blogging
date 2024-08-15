@@ -8,7 +8,8 @@ export const createBlog = async (blogData, token) => {
     const response = await axios.post('https://blogging-theta-sand.vercel.app', blogData, {
       headers: {
         'x-auth-token': token,
-        'Content-Type': 'multipart/form-data'
+        'Content-Type': 'application/json'
+        // 'Content-Type': 'multipart/form-data'
       }
     });
     return response.data;
