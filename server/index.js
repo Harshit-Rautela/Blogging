@@ -18,7 +18,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+  origin: 'https://blogging-aahn.vercel.app', // Replace with your frontend's origin
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'], // Add any custom headers here
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const __filename = fileURLToPath(import.meta.url);
