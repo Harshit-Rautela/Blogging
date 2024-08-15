@@ -13,7 +13,7 @@ import SignUp from "./components/Signup";
 import Navbar from "./components/Navbar";
 import MainPage from "./components/MainPage";
 import GettingStarted from "./components/Header/GettingStarted";
-//import UpdateBlog from "./components/UpdateBlog";
+import UpdateBlog from "./components/UpdateBlog";
 import { Blog } from "../../server/models/Model";
 import DetailedBlog from "./components/DetailedBlog";
 import UpdateBlog from "./components/UpdateBlog";
