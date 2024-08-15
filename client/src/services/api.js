@@ -4,7 +4,7 @@ import axios from 'axios';
 // Function to handle user signup
 export const signupUser = async (userData) => {
   try {
-    const response = await axios.post('https://blogging-ten-nu.vercel.app/auth/register', userData, {
+    const response = await axios.post('https://blogging-theta-sand.vercel.app/auth/register', userData, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -17,7 +17,7 @@ export const signupUser = async (userData) => {
 
 export const loginUser = async (userData) => {
     try {
-      const response = await axios.post('https://blogging-ten-nu.vercel.app/auth/login', userData, {
+      const response = await axios.post('https://blogging-theta-sand.vercel.app/auth/login', userData, {
         headers: {
           'Content-Type': 'application/json',
         },
