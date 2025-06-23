@@ -6,3 +6,4 @@ config();
 
 
 export const MongoDBURL = process.env.MongoDBURL || 'your_default_mongodb_url_here';
+// xample: mongodb+srv://harshitsrautela:roots@cluster0.w658fhn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0

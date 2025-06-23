@@ -1,4 +1,6 @@
+import React from 'react';
 import axios from 'axios'
+
 const BACKEND_BASE_URL = 'https://blogging-backend-seven.vercel.app';
 
 // Function to handle user signup
