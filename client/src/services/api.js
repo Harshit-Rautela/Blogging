@@ -4,7 +4,7 @@ const BACKEND_BASE_URL = 'https://blogging-backend-seven.vercel.app';
 // Function to handle user signup
 export const signupUser = async (userData) => {
   try {
-    
+
     const response = await axios.post(`${BACKEND_BASE_URL}/auth/register`, userData, {
       headers: {
         'Content-Type': 'application/json',
@@ -21,7 +21,7 @@ export const signupUser = async (userData) => {
 // Function to handle user login
 export const loginUser = async (userData) => {
   try {
-    
+
     const response = await axios.post(`${BACKEND_BASE_URL}/auth/login`, userData, {
       headers: {
         'Content-Type': 'application/json',
