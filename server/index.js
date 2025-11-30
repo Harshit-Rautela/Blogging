@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 
 import { fileURLToPath } from 'url';
 
+// hello to everyone
 
 // Initialize environment variables
 dotenv.config();
