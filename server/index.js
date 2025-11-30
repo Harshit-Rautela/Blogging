@@ -50,7 +50,4 @@ mongoose.connect(MongoDBURL)
     console.error("Error connecting to MongoDB:", error);
   });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`App is listening on port ${PORT}`);
-});
+
