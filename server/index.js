@@ -40,6 +40,11 @@ app.use("/", Blogrouter);
 mongoose.connect(MongoDBURL)
   .then(() => {
     console.log("App connected to MongoDB database");
+
+    // Start server ONLY after DB is connected
+    app.listen(PORT, () => {
+      console.log(`App is listening on port ${PORT}`);
+    });
   })
   .catch((error) => {
     console.error("Error connecting to MongoDB:", error);
