@@ -27,11 +27,11 @@ const AllBlogs = () => {
     fetchBlogs();
   }, [navigate]);
 
-  const handleDelete = async (id) => {
-    const token = localStorage.getItem("token");
-    await deleteBlog(id, token);
-    setBlogs(blogs.filter((blog) => blog._id !== id));
-  };
+  // const handleDelete = async (id) => {
+  //   const token = localStorage.getItem("token");
+  //   await deleteBlog(id, token);
+  //   setBlogs(blogs.filter((blog) => blog._id !== id));
+  // };
 
   // const handleUpdate = (id) => {
   //   navigate(`/update/${id}`);
