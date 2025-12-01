@@ -30,7 +30,7 @@ router.post('/',auth, upload.single('file'), async (req, res) => {
     res.status(201).json(savedBlog);
   } catch (error) {
     console.error('Error Saving Blog:', error.message);
-    res.status(500).send('AAAaaServer error');
+    res.status(500).send('Server error');
   }
 });
 
