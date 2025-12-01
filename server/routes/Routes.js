@@ -3,7 +3,7 @@ import { Blog } from '../models/Model.js';
 import auth from '../middleware/Auth.js';
 import fs from 'fs'
 import { upload } from '../middleware/FileAuth.js'; // Import the Multer middleware
-import uploadOnCloudinary from '../utils/Cloudinary.js'; // Import the Cloudinary utility
+import {uploadOnCloudinary} from '../utils/Cloudinary.js'; // Import the Cloudinary utility
 
 const router = express.Router();
 
