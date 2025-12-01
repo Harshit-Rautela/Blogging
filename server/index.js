@@ -21,7 +21,10 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: "*",
+    origin:  [
+      "https://blogging-aahn.vercel.app",  // your frontend domain
+      "http://localhost:5173",             // for local testing
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
     credentials:true,
