@@ -49,7 +49,7 @@ const Home = () => {
       <div className="container mx-auto p-6 mt-16"> {/* Add margin-top here */}
         <div className="bg-white shadow-lg rounded-lg p-6 mb-6">
           <h1 className="text-3xl font-bold mb-2">Welcome, {user.name}</h1>
-          <p className="text-gray-600">{user.email}</p>
+          {/* <p className="text-gray-600">{user.email}</p> */}
         </div>
 
         <div className="bg-white shadow-lg rounded-lg p-6">

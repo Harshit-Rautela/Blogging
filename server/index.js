@@ -42,6 +42,7 @@ mongoose.connect(MongoDBURL)
     console.log("App connected to MongoDB database");
 
     // Start server ONLY after DB is connected
+    //.listen() will start listening incoming requests on a port
     app.listen(PORT, () => {
       console.log(`App is listening on port ${PORT}`);
     });
