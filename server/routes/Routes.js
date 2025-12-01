@@ -8,30 +8,32 @@ import uploadOnCloudinary from '../utils/Cloudinary.js'; // Import the Cloudinar
 const router = express.Router();
 
 // Create a new blog
-router.post("/", auth, upload.single("file"), async (req, res) => {
+router.post('/',auth, upload.single('file'), async (req, res) => {
+  const { title, content } = req.body;
+  //remember title and content will come in req.body while image will be in req.file
   try {
-    const { title, content } = req.body;
-    let fileUrl = "";
-
+    let fileUrl = '';
     if (req.file) {
-      const uploadResult = await uploadOnCloudinary(req.file.buffer);
-      fileUrl = uploadResult.secure_url;
+      const uploadResult = await uploadOnCloudinary(req.file.path);     
+      fileUrl = uploadResult?.url || '';
+       fs.unlinkSync(req.file.path); // Remove the file from public/temp after uploading to Cloudinary
     }
-
+    
     const newBlog = new Blog({
       title,
       content,
       imageUrl: fileUrl,
       authorId: req.user,
     });
-
+    
     const savedBlog = await newBlog.save();
     res.status(201).json(savedBlog);
   } catch (error) {
-    console.error("Error Saving Blog:", error.message);
-    res.status(500).send("Server error");
+    console.error('Error Saving Blog:', error.message);
+    res.status(500).send('Server error');
   }
 });
+
 
 // Get all blogs for the logged-in user
 router.get('/user', auth, async (req, res) => {
