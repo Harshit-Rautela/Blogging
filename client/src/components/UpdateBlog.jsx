@@ -28,7 +28,6 @@ const UpdateBlog = () => {
     e.preventDefault();
     try {
         const token = localStorage.getItem('token');
-        // console.log("Hi")
         if(!token){
             navigate('/login');
         }
