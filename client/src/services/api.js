@@ -1,7 +1,7 @@
 
 import axios from 'axios'
 
-const BACKEND_BASE_URL = 'https://blogging-backend-seven.vercel.app';
+const BACKEND_BASE_URL = 'https://blogging-iota-three.vercel.app';
 
 // Function to handle user signup
 export const signupUser = async (userData) => {

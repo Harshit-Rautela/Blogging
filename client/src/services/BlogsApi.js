@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Define your backend API base URL as a constant for easier management
 // This should match your deployed backend URL
-const BACKEND_BASE_URL = 'https://blogging-backend-seven.vercel.app';
+const BACKEND_BASE_URL = 'https://blogging-iota-three.vercel.app';
 
 // Function to create a blog
 export const createBlog = async (blogData, token) => {
