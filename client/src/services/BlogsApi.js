@@ -12,7 +12,7 @@ export const createBlog = async (blogData, token) => {
     const response = await axios.post(`${BACKEND_BASE_URL}`, blogData, {
       headers: {
         'x-auth-token': token,
-         'Content-Type': 'application/json'
+        //  'Content-Type': 'application/json'
         //  'Content-Type': 'multipart/form-data' // Uncomment if you are sending files
       }
     });
