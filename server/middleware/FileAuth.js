@@ -1,7 +1,13 @@
-// multer.js
-import multer from "multer";
+import multer from 'multer';
 
-// Vercel does NOT allow saving to disk. So memoryStorage MUST be used.
-const storage = multer.memoryStorage();
-
-export const upload = multer({ storage });
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './public/temp'); // Ensure this directory exists
+    },
+    filename: function (req, file, cb) {
+      //const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+      cb(null, file.originalname)
+    }
+  })
+  
+ export const upload = multer({ storage})
