@@ -13,7 +13,7 @@ export const createBlog = async (blogData, token) => {
       headers: {
         'x-auth-token': token,
         //  'Content-Type': 'application/json'
-        //  'Content-Type': 'multipart/form-data' // Uncomment if you are sending files
+       'Content-Type': 'multipart/form-data' // Uncomment if you are sending files
       }
     });
     return response.data;
