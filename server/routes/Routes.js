@@ -4,12 +4,14 @@ import auth from '../middleware/Auth.js';
 import fs from 'fs'
 import { upload } from '../middleware/FileAuth.js'; // Import the Multer middleware
 import { uploadOnCloudinary } from '../utils/Cloudinary.js'; // Import the Cloudinary utility
-import redisClient from '../utils/redisClient.js';
+import getRedisClient from '../utils/redisClient.js';
 const router = express.Router();
+
 
 // Create a new blog
 router.post('/', auth, upload.single('file'), async (req, res) => {
   try {
+    const redisClient = await getRedisClient();
     const { title, content } = req.body;
 
     let fileUrl = '';
@@ -43,6 +45,7 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
 // Get all blogs for the logged-in user
 router.get('/user', auth, async (req, res) => {
   try {
+    const redisClient = await getRedisClient();
     const cacheKey = `blogs:user:${req.user}`
     const cachedBlogs = await redisClient.get(cacheKey);
     if (cachedBlogs) {
@@ -65,6 +68,7 @@ router.get('/user', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
   const { id } = req.params;
   try {
+    const redisClient = await getRedisClient();
     const cacheId = `blog:${id}`
     const cachedBlog = await redisClient.get(cacheId);
     if (cachedBlog) {
@@ -100,6 +104,7 @@ router.put('/:id', auth, async (req, res) => {
   const { id } = req.params;
   const { title, content } = req.body;
   try {
+    const redisClient = await getRedisClient();
     const blog = await Blog.findById(id);
     if (!blog) {
       return res.status(404).json({ msg: 'Blog not found' });
@@ -126,6 +131,7 @@ router.put('/:id', auth, async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
   const { id } = req.params;
   try {
+    const redisClient = await getRedisClient();
     const blog = await Blog.findById(id);
     if (!blog) {
       return res.status(404).json({ msg: 'Blog not found' });
