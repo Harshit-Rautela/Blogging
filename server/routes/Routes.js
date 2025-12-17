@@ -3,8 +3,8 @@ import { Blog } from '../models/Model.js';
 import auth from '../middleware/Auth.js';
 import fs from 'fs'
 import { upload } from '../middleware/FileAuth.js'; // Import the Multer middleware
-import {uploadOnCloudinary} from '../utils/Cloudinary.js'; // Import the Cloudinary utility
-
+import { uploadOnCloudinary } from '../utils/Cloudinary.js'; // Import the Cloudinary utility
+import redisClient from '../utils/redisClient.js';
 const router = express.Router();
 
 // Create a new blog
@@ -28,6 +28,7 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
     });
 
     const savedBlog = await newBlog.save();
+    await redisClient.del(`blogs:user:${req.user}`).catch(console.error)
     return res.status(201).json(savedBlog);
 
   } catch (error) {
@@ -42,7 +43,17 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
 // Get all blogs for the logged-in user
 router.get('/user', auth, async (req, res) => {
   try {
-    const blogs = await Blog.find({ authorId: req.user});
+    const cacheKey = `blogs:user:${req.user}`
+    const cachedBlogs = await redisClient.get(cacheKey);
+    if (cachedBlogs) {
+      return res.json(JSON.parse(cachedBlogs));
+    }
+    const blogs = await Blog.find({ authorId: req.user });
+    await redisClient.setEx(
+      cacheKey,
+      60,
+      JSON.stringify(blogs)
+    )
     res.json(blogs);
   } catch (error) {
     console.error(error.message);
@@ -51,18 +62,32 @@ router.get('/user', auth, async (req, res) => {
 });
 
 //Get a blog by ID
-router.get('/:id',auth, async(req,res)=>{
-  const {id} = req.params;
-  try{
+router.get('/:id', auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const cacheId = `blog:${id}`
+    const cachedBlog = await redisClient.get(cacheId);
+    if (cachedBlog) {
+      const blog = JSON.parse(cachedBlog);
+      if (blog.authorId.toString() != req.user) {
+        return res.status(401).json({ msg: 'Unauthorized' });
+      }
+      return res.json(blog);
+    }
     const blog = await Blog.findById(id);
-    if(!blog){
-      return res.status(404).json({msg:'Blog not found'});
+    if (!blog) {
+      return res.status(404).json({ msg: 'Blog not found' });
     }
-    if(blog.authorId.toString() !== req.user){
-      return res.status(401).json({msg:` Blog is not if User, req.user =${ req.user}, authorId=${blog.authorId}`})
+    if (blog.authorId.toString() !== req.user) {
+      return res.status(401).json({ msg: ` Blog is not if User, req.user =${req.user}, authorId=${blog.authorId}` })
     }
+    await redisClient.setEx(
+      cacheId,
+      60,
+      JSON.stringify(blog)
+    )
     res.json(blog);
-  }catch(err){
+  } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
 
@@ -71,48 +96,52 @@ router.get('/:id',auth, async(req,res)=>{
 })
 
 //Update a blog by ID;
-router.put('/:id',auth , async(req,res)=>{
-  const {id} = req.params;
-  const {title,content} = req.body;
+router.put('/:id', auth, async (req, res) => {
+  const { id } = req.params;
+  const { title, content } = req.body;
   try {
     const blog = await Blog.findById(id);
-    if(!blog){
-      return res.status(404).json({msg:'Blog not found'});
+    if (!blog) {
+      return res.status(404).json({ msg: 'Blog not found' });
     }
-    if(blog.authorId.toString() !== req.user){
-      return res.status(401).json({msg:` Blog is not if User, req.user =${ req.user}, authorId=${blog.authorId}`})
+    if (blog.authorId.toString() !== req.user) {
+      return res.status(401).json({ msg: ` Blog is not if User, req.user =${req.user}, authorId=${blog.authorId}` })
     }
-    blog.title = title||'Afdbg';
-    blog.content = content||'sdgfgfdbtgh';
+    blog.title = title || 'Afdbg';
+    blog.content = content || 'sdgfgfdbtgh';
     blog.updatedAt = Date.now();
     const updatedBlog = await blog.save();
+    await redisClient.del(`blog:${id}`);
+    await redisClient.del(`blogs:user:${req.user}`).catch(console.error);
     res.json(updatedBlog);
-    
+
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({msg:'Cannot update blog.'})    
+    res.status(500).json({ msg: 'Cannot update blog.' })
   }
 })
 
 
- // Delete a blog by ID
-router.delete('/:id',auth, async(req,res)=>{
-  const {id} = req.params;
+// Delete a blog by ID
+router.delete('/:id', auth, async (req, res) => {
+  const { id } = req.params;
   try {
     const blog = await Blog.findById(id);
-    if(!blog){
-      res.status(404).json({msg:'Blog not found'});
+    if (!blog) {
+      return res.status(404).json({ msg: 'Blog not found' });
     }
-    if(blog.authorId.toString()!==req.user){
-      res.status(401).json({msg:'User is not authorized to delete the blog.'})
+    if (blog.authorId.toString() !== req.user) {
+      return res.status(401).json({ msg: 'User is not authorized to delete the blog.' })
     }
     await Blog.findByIdAndDelete(id); // Use findByIdAndDelete to remove the blog
+    await redisClient.del(`blog:${id}`);
+    await redisClient.del(`blogs:user:${req.user}`).catch(console.error);
     res.json({ msg: 'Blog deleted' });
-    
+
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({msg:'Cannot delete blog.'})
-    
+    res.status(500).json({ msg: 'Cannot delete blog.' })
+
   }
 })
 
