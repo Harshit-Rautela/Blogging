@@ -12,28 +12,17 @@ import Userrouter from "./routes/auth.js";
 dotenv.config();
 
 const app = express();
-
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://blogging-aahn.vercel.app",
-];
+const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.endsWith(".vercel.app")
-      ) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
+    origin: [
+      "https://blogging-aahn.vercel.app",
+      "http://localhost:5173",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
+    credentials: true,
   })
 );
 
@@ -45,20 +34,21 @@ const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
-  res.status(200).json({ message: "Welcome To Blogging" });
+  return res.status(200).send("Welcome To Blogging");
 });
 
 app.use("/auth", Userrouter);
 app.use("/", Blogrouter);
 
-let isConnected = false;
+mongoose
+  .connect(MongoDBURL)
+  .then(() => {
+    console.log("App connected to MongoDB database");
 
-async function connectDB() {
-  if (isConnected) return;
-  await mongoose.connect(MongoDBURL);
-  isConnected = true;
-}
-
-connectDB();
-
-export default app;
+    app.listen(PORT, () => {
+      console.log(`App is listening on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Error connecting to MongoDB:", error);
+  });
