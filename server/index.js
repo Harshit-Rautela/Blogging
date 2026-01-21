@@ -22,7 +22,8 @@ const PORT = process.env.PORT || 5000;
 app.use(
   cors({
     origin:  [
-      "https://blogging-aahn.vercel.app",  // your frontend domain
+      "https://blogging-aahn.vercel.app",  
+      "https://blogging-aahn-ibv1ppxor-harshit-rautelas-projects.vercel.app",
       "http://localhost:5173",             // for local testing
     ],
     // Hello
