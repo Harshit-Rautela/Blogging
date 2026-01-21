@@ -1,86 +1,65 @@
-import express from "express";
-import path from "path";
-import mongoose from "mongoose";
-import cors from "cors";
-import dotenv from "dotenv";
-import { fileURLToPath } from "url";
+import express from 'express';
+import path from 'path';
+import { MongoDBURL } from './config.js';
+import Blogrouter from './routes/Routes.js';
+import Userrouter from './routes/auth.js';
+import mongoose from 'mongoose';
+import { User } from './models/Model.js';
+import cors from 'cors';
+import dotenv from 'dotenv';
 
-import { MongoDBURL } from "./config.js";
-import Blogrouter from "./routes/Routes.js";
-import Userrouter from "./routes/auth.js";
+import { fileURLToPath } from 'url';
 
-// Load env
+
+
+// Initialize environment variables
 dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-// --------------------
-// CORS (FIXED)
-// --------------------
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://blogging-aahn.vercel.app",
-];
-
+// Middleware
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow server-to-server
-
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.endsWith(".vercel.app") // ✅ allow ALL Vercel preview URLs
-      ) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
+    origin:  [
+      "https://blogging-aahn.vercel.app",  // your frontend domain
+      "http://localhost:5173",             // for local testing
+    ],
+    // Hello
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
+    credentials:true,
   })
 );
-
-// Handle preflight
 app.options("*", cors());
 
-// --------------------
-// Middleware
-// --------------------
 app.use(express.json());
 
-// --------------------
-// Static files
-// --------------------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, "public")));
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
 
-// --------------------
 // Routes
-// --------------------
 app.get("/", (req, res) => {
-  res.status(200).send("Welcome To Blogging");
+  console.log('The request is:', req);
+  return res.status(200).send("Welcome To Blogging");
 });
 
 app.use("/auth", Userrouter);
 app.use("/", Blogrouter);
 
-// --------------------
-// MongoDB (SERVERLESS SAFE)
-// --------------------
-let isConnected = false;
+// Connect to MongoDB
+mongoose.connect(MongoDBURL)
+  .then(() => {
+    console.log("App connected to MongoDB database");
 
-async function connectDB() {
-  if (isConnected) return;
-  await mongoose.connect(MongoDBURL);
-  isConnected = true;
-  console.log("MongoDB connected");
-}
+    app.listen(PORT, () => {
+      console.log(`App is listening on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Error connecting to MongoDB:", error);
+  });
 
-connectDB();
 
-// ❌ NO app.listen()
-// ✅ EXPORT APP FOR VERCEL
-export default app;
