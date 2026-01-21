@@ -25,6 +25,7 @@ app.use(
       "https://blogging-aahn.vercel.app",  // your frontend domain
       "http://localhost:5173",             // for local testing
     ],
+    // Hello
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
     credentials:true,
