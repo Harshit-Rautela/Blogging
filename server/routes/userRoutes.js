@@ -6,6 +6,8 @@ import { User, Blog } from "../models/Model.js";
 import auth from "../middleware/Auth.js";
 
 const router = express.Router();
+// Login rate limiter: 10 attempts per 15 minutes
+
 
 // Escape special regex characters in user search input
 const escapeRegex = (value) => {

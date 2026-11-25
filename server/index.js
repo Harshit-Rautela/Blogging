@@ -6,6 +6,8 @@ import path from "path";
 import mongoose from "mongoose";
 import cors from "cors";
 import { fileURLToPath } from "url";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
 
 import { MongoDBURL } from "./config.js";
 import Blogrouter from "./routes/Routes.js";
@@ -14,6 +16,7 @@ import UserDiscoveryRouter from "./routes/userRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+app.use(helmet());
 
 // Resolve directory paths
 const __filename = fileURLToPath(import.meta.url);
@@ -48,6 +51,19 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// General API rate limiter
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 200,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests. Please try again later.",
+  },
+});
+
+
 // Body parsing
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
@@ -62,6 +78,8 @@ app.get("/", (req, res) => {
     message: "Blogging API is running",
   });
 });
+app.use(apiLimiter);
+
 
 // Routes
 app.use("/auth", Userrouter);

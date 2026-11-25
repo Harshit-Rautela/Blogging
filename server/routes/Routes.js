@@ -3,6 +3,7 @@ import { Blog } from "../models/Model.js";
 import { Comment } from "../models/Comment.js";
 import auth from "../middleware/Auth.js";
 import { upload } from "../middleware/FileAuth.js";
+import mongoose from "mongoose";
 // import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import {
   uploadOnCloudinary,
@@ -10,6 +11,62 @@ import {
 } from "../utils/Cloudinary.js";
 
 const router = express.Router();
+// Validate MongoDB ObjectIds
+const isValidId = (id) => mongoose.isValidObjectId(id);
+
+// Blog field validation
+const validateBlogInput = (body, partial = false) => {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return "Invalid request body.";
+  }
+
+  const { title, content } = body;
+
+  if (!partial || title !== undefined) {
+    if (typeof title !== "string" || !title.trim()) {
+      return "Title is required and must be valid text.";
+    }
+
+    if (title.trim().length > 150) {
+      return "Title cannot exceed 150 characters.";
+    }
+  }
+
+  if (!partial || content !== undefined) {
+    if (typeof content !== "string" || !content.trim()) {
+      return "Content is required and must be valid text.";
+    }
+
+    if (content.trim().length > 50000) {
+      return "Content cannot exceed 50000 characters.";
+    }
+  }
+
+  if (partial && title === undefined && content === undefined) {
+    return "At least one field must be provided for an update.";
+  }
+
+  return null;
+};
+
+// Comment field validation
+const validateCommentInput = (body) => {
+  if (!body || typeof body.content !== "string") {
+    return "Comment must be valid text.";
+  }
+
+  const content = body.content.trim();
+
+  if (!content) {
+    return "Comment cannot be empty.";
+  }
+
+  if (content.length > 1000) {
+    return "Comment cannot exceed 1000 characters.";
+  }
+
+  return null;
+};
 
 // Create a new blog
 
@@ -17,7 +74,15 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
   let uploadedPublicId = "";
 
   try {
+
     const { title, content } = req.body;
+    const validationError = validateBlogInput(req.body);
+
+    if (validationError) {
+      return res.status(400).json({
+        msg: validationError,
+      });
+    }
 
     let imageUrl = "";
     let imagePublicId = "";
@@ -31,8 +96,8 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
     }
 
     const newBlog = new Blog({
-      title,
-      content,
+      title: title.trim(),
+      content: content.trim(),
       imageUrl,
       imagePublicId,
       authorId: req.user,
@@ -172,6 +237,11 @@ router.get("/user", auth, async (req, res) => {
 router.get("/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        msg: "Invalid blog ID.",
+      });
+    }
 
     const blog = await Blog.findById(id);
 
@@ -208,6 +278,22 @@ router.put("/:id", auth, upload.single("file"), async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content } = req.body;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        msg: "Invalid blog ID.",
+      });
+    }
+    let validationError = null;
+
+    if (title !== undefined || content !== undefined) {
+      validationError = validateBlogInput(req.body, true);
+    }
+
+    if (validationError) {
+      return res.status(400).json({
+        msg: validationError,
+      });
+    }
 
     const blog = await Blog.findById(id);
 
@@ -228,11 +314,11 @@ router.put("/:id", auth, upload.single("file"), async (req, res) => {
 
     // Update text fields only when provided.
     if (title !== undefined) {
-      blog.title = title;
+      blog.title = title.trim();
     }
 
     if (content !== undefined) {
-      blog.content = content;
+      blog.content = content, trim();
     }
 
     // Upload replacement image if one was provided.
@@ -279,6 +365,11 @@ router.put("/:id", auth, upload.single("file"), async (req, res) => {
 router.delete("/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        msg: "Invalid blog ID.",
+      });
+    }
 
     const blog = await Blog.findById(id);
 
@@ -337,6 +428,11 @@ router.delete("/:id", auth, async (req, res) => {
 router.post("/:id/like", auth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        msg: "Invalid blog ID.",
+      });
+    }
 
     const blog = await Blog.findById(id);
 
@@ -379,6 +475,11 @@ router.post("/:id/like", auth, async (req, res) => {
 router.delete("/:id/like", auth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        msg: "Invalid blog ID.",
+      });
+    }
 
     const blog = await Blog.findById(id);
 
@@ -426,6 +527,11 @@ router.delete("/:id/like", auth, async (req, res) => {
 router.get("/:id/likes", auth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        msg: "Invalid blog ID.",
+      });
+    }
 
     const blog = await Blog.findById(id)
       .select("likedBy")
@@ -458,8 +564,20 @@ router.get("/:id/likes", auth, async (req, res) => {
 router.post("/:id/comments", auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const content = String(req.body.content || "").trim();
+    const validationError = validateCommentInput(req.body);
 
+    if (validationError) {
+      return res.status(400).json({
+        msg: validationError,
+      });
+    }
+
+    const content = req.body.content.trim();
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        msg: "Invalid blog ID.",
+      });
+    }
     const blog = await Blog.findById(id);
 
     if (!blog) {
@@ -514,6 +632,11 @@ router.post("/:id/comments", auth, async (req, res) => {
 router.get("/:id/comments", auth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        msg: "Invalid blog ID.",
+      });
+    }
 
     const blog = await Blog.findById(id).select("authorId status");
 
@@ -584,7 +707,20 @@ router.get("/:id/comments", auth, async (req, res) => {
 router.put("/comments/:commentId", auth, async (req, res) => {
   try {
     const { commentId } = req.params;
-    const content = String(req.body.content || "").trim();
+    const validationError = validateCommentInput(req.body);
+
+    if (validationError) {
+      return res.status(400).json({
+        msg: validationError,
+      });
+    }
+
+    const content = req.body.content.trim();
+    if (!isValidId(commentId)) {
+      return res.status(400).json({
+        msg: "Invalid comment ID.",
+      });
+    }
 
     const comment = await Comment.findById(commentId);
 
@@ -593,6 +729,7 @@ router.put("/comments/:commentId", auth, async (req, res) => {
         msg: "Comment not found.",
       });
     }
+
 
     // Only the comment's author can edit it.
     if (comment.userId.toString() !== req.user) {
@@ -637,6 +774,11 @@ router.put("/comments/:commentId", auth, async (req, res) => {
 router.delete("/comments/:commentId", auth, async (req, res) => {
   try {
     const { commentId } = req.params;
+    if (!isValidId(commentId)) {
+      return res.status(400).json({
+        msg: "Invalid comment ID.",
+      });
+    }
 
     const comment = await Comment.findById(commentId);
 

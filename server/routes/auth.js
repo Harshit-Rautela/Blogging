@@ -2,11 +2,35 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-
+import { rateLimit } from "express-rate-limit";
 import { User } from "../models/Model.js";
 import auth from "../middleware/Auth.js";
 
 const router = express.Router();
+// Login rate limiter: 10 attempts per 15 minutes
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    msg: "Too many login attempts. Please try again after 15 minutes.",
+  },
+  skipSuccessfulRequests: true,
+});
+
+// Registration rate limiter: 5 attempts per hour
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    msg: "Too many registration attempts. Please try again after an hour.",
+  },
+});
 
 // Generate JWT
 const generateToken = (userId) => {
@@ -18,7 +42,7 @@ const generateToken = (userId) => {
 };
 
 // Register a new user
-router.post("/register", async (req, res) => {
+router.post("/register", registerLimiter, async (req, res) => {
   try {
     const { name, username, email, password } = req.body;
 
@@ -135,7 +159,7 @@ router.post("/register", async (req, res) => {
 });
 
 // Login — email and password only
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
