@@ -2,33 +2,56 @@ import express from "express";
 import { Blog } from "../models/Model.js";
 import auth from "../middleware/Auth.js";
 import { upload } from "../middleware/FileAuth.js";
-import { uploadOnCloudinary } from "../utils/Cloudinary.js";
+// import { uploadOnCloudinary } from "../utils/Cloudinary.js";
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from "../utils/Cloudinary.js";
 
 const router = express.Router();
 
 // Create a new blog
+
 router.post("/", auth, upload.single("file"), async (req, res) => {
+  let uploadedPublicId = "";
+
   try {
     const { title, content } = req.body;
-    let fileUrl = "";
+
+    let imageUrl = "";
+    let imagePublicId = "";
 
     if (req.file) {
       const uploadResult = await uploadOnCloudinary(req.file.buffer);
-      fileUrl = uploadResult.secure_url;
+
+      imageUrl = uploadResult.secure_url;
+      imagePublicId = uploadResult.public_id;
+      uploadedPublicId = imagePublicId;
     }
 
     const newBlog = new Blog({
       title,
       content,
-      imageUrl: fileUrl,
+      imageUrl,
+      imagePublicId,
       authorId: req.user,
     });
 
     const savedBlog = await newBlog.save();
+
+    // Upload is now associated with the saved blog.
+    uploadedPublicId = "";
+
     return res.status(201).json(savedBlog);
   } catch (error) {
-    console.error("Error Saving Blog:", error);
-    return res.status(500).send("Server error");
+    // Clean up an uploaded image if saving the blog failed.
+    if (uploadedPublicId) {
+      await deleteFromCloudinary(uploadedPublicId).catch(() => null);
+    }
+
+    return res.status(500).json({
+      msg: "Server error while creating blog.",
+    });
   }
 });
 
@@ -166,54 +189,120 @@ router.get("/:id", auth, async (req, res) => {
 });
 
 // Update a blog by ID
-router.put("/:id", auth, async (req, res) => {
-  const { id } = req.params;
-  const { title, content } = req.body;
+
+router.put("/:id", auth, upload.single("file"), async (req, res) => {
+  let newImagePublicId = "";
 
   try {
+    const { id } = req.params;
+    const { title, content } = req.body;
+
     const blog = await Blog.findById(id);
 
     if (!blog) {
-      return res.status(404).json({ msg: "Blog not found" });
+      return res.status(404).json({
+        msg: "Blog not found",
+      });
     }
 
     if (blog.authorId.toString() !== req.user) {
-      return res.status(401).json({ msg: "Unauthorized" });
+      return res.status(401).json({
+        msg: "Unauthorized",
+      });
     }
 
-    blog.title = title || blog.title;
-    blog.content = content || blog.content;
-    blog.updatedAt = Date.now();
+    // Preserve existing image information.
+    const oldImagePublicId = blog.imagePublicId;
+
+    // Update text fields only when provided.
+    if (title !== undefined) {
+      blog.title = title;
+    }
+
+    if (content !== undefined) {
+      blog.content = content;
+    }
+
+    // Upload replacement image if one was provided.
+    if (req.file) {
+      const uploadResult = await uploadOnCloudinary(req.file.buffer);
+
+      newImagePublicId = uploadResult.public_id;
+
+      blog.imageUrl = uploadResult.secure_url;
+      blog.imagePublicId = uploadResult.public_id;
+    }
 
     const updatedBlog = await blog.save();
-    res.json(updatedBlog);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ msg: "Cannot update blog." });
+
+    // The new image is now safely saved in MongoDB.
+    newImagePublicId = "";
+
+    // Delete the previous image only after successful saving.
+    if (
+      req.file &&
+      oldImagePublicId &&
+      oldImagePublicId !== updatedBlog.imagePublicId
+    ) {
+      await deleteFromCloudinary(oldImagePublicId).catch(() => null);
+    }
+
+    return res.status(200).json(updatedBlog);
+  } catch (error) {
+    // If the update fails, clean up the newly uploaded image.
+    if (newImagePublicId) {
+      await deleteFromCloudinary(newImagePublicId).catch(() => null);
+    }
+
+    return res.status(500).json({
+      msg: "Cannot update blog.",
+    });
   }
 });
 
-// Delete a blog by ID
-router.delete("/:id", auth, async (req, res) => {
-  const { id } = req.params;
 
+// Delete a blog by ID
+
+router.delete("/:id", auth, async (req, res) => {
   try {
+    const { id } = req.params;
+
     const blog = await Blog.findById(id);
 
     if (!blog) {
-      return res.status(404).json({ msg: "Blog not found" });
+      return res.status(404).json({
+        msg: "Blog not found",
+      });
     }
 
     if (blog.authorId.toString() !== req.user) {
-      return res.status(401).json({ msg: "Unauthorized" });
+      return res.status(401).json({
+        msg: "Unauthorized",
+      });
+    }
+
+    // Delete the blog's image from Cloudinary, if one exists.
+    if (blog.imagePublicId) {
+      try {
+        await deleteFromCloudinary(blog.imagePublicId);
+      } catch {
+        return res.status(500).json({
+          msg: "Could not delete the blog image. Blog was not deleted.",
+        });
+      }
     }
 
     await Blog.findByIdAndDelete(id);
-    res.json({ msg: "Blog deleted" });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ msg: "Cannot delete blog." });
+
+    return res.status(200).json({
+      msg: "Blog and associated image deleted successfully",
+    });
+  } catch {
+    return res.status(500).json({
+      msg: "Cannot delete blog.",
+    });
   }
 });
+
 
 export default router;

@@ -3536,3 +3536,42 @@
     font-size: 11px;
   }
 }
+
+
+.blogs-sort-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+  max-width: 260px;
+}
+
+.blogs-sort-wrapper label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #77718d;
+}
+
+.blogs-sort-select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(125, 95, 190, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #39304f;
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.blogs-sort-select:focus {
+  border-color: #9670d8;
+  box-shadow: 0 0 0 3px rgba(150, 112, 216, 0.12);
+}
+
+@media (max-width: 600px) {
+  .blogs-sort-wrapper {
+    max-width: 100%;
+  }
+}

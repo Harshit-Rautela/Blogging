@@ -36,6 +36,7 @@ export const getUserBlogs = async (token, filters = {}) => {
       search: filters.search || "",
       category: filters.category || "",
       tag: filters.tag || "",
+      sortBy: filters.sortBy || "newest",
     },
   });
 

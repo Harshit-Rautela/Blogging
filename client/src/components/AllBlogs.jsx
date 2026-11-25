@@ -11,7 +11,7 @@ const AllBlogs = () => {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  const [sortBy, setSortBy] = useState("newest");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [tag, setTag] = useState("");
@@ -47,6 +47,7 @@ const AllBlogs = () => {
           search: search.trim(),
           category: category.trim(),
           tag: tag.trim(),
+          sortBy,
         });
 
         if (!isActive) return;
@@ -80,7 +81,7 @@ const AllBlogs = () => {
       isActive = false;
       clearTimeout(timer);
     };
-  }, [navigate, page, search, category, tag, retryKey]);
+  }, [navigate, page, search, category, tag, retryKey, sortBy]);
 
   const handleSearchChange = (value) => {
     setSearch(value);
@@ -103,7 +104,10 @@ const AllBlogs = () => {
     setTag("");
     setPage(1);
   };
-
+  const handleSortChange = (value) => {
+    setSortBy(value);
+    setPage(1);
+  };
   const hasActiveFilters =
     search.trim() || category.trim() || tag.trim();
 
@@ -210,6 +214,21 @@ const AllBlogs = () => {
                   Clear filters
                 </button>
               )}
+            </div>
+            <div className="blogs-sort-wrapper">
+              <label htmlFor="blogs-sort">Sort stories by</label>
+
+              <select
+                id="blogs-sort"
+                className="blogs-sort-select"
+                value={sortBy}
+                onChange={(e) => handleSortChange(e.target.value)}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="title_asc">Title: A–Z</option>
+                <option value="title_desc">Title: Z–A</option>
+              </select>
             </div>
           </div>
 
