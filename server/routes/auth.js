@@ -11,29 +11,29 @@ import auth from "../middleware/Auth.js";
 
 const router = express.Router();
 // Login rate limiter: 10 attempts per 15 minutes
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: {
-    success: false,
-    msg: "Too many login attempts. Please try again after 15 minutes.",
-  },
-  skipSuccessfulRequests: true,
-});
+// const loginLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   limit: 10,
+//   standardHeaders: "draft-8",
+//   legacyHeaders: false,
+//   message: {
+//     success: false,
+//     msg: "Too many login attempts. Please try again after 15 minutes.",
+//   },
+//   skipSuccessfulRequests: true,
+// });
 
-// Registration rate limiter: 5 attempts per hour
-const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  limit: 5,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: {
-    success: false,
-    msg: "Too many registration attempts. Please try again after an hour.",
-  },
-});
+// // Registration rate limiter: 5 attempts per hour
+// const registerLimiter = rateLimit({
+//   windowMs: 60 * 60 * 1000,
+//   limit: 5,
+//   standardHeaders: "draft-8",
+//   legacyHeaders: false,
+//   message: {
+//     success: false,
+//     msg: "Too many registration attempts. Please try again after an hour.",
+//   },
+// });
 
 // Generate JWT
 const generateToken = (userId) => {
