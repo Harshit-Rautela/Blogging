@@ -1,67 +1,195 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { signupUser } from '../services/api'; // Import the signupUser function
+
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  FaFeatherAlt,
+  FaUser,
+  FaEnvelope,
+  FaLock,
+  FaArrowRight,
+} from "react-icons/fa";
+
+import { signupUser } from "../services/api";
 
 const Signup = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState(""); 
-  const [error, setError] = useState(""); // State to hold error messages
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+
     try {
       const data = await signupUser({ name, email, password });
-      localStorage.setItem('token', data.token); // Store the token
-      navigate('/home'); // Redirect to the home page after signup
-    } catch (error) {
-      console.error('Signup failed:', error);
-      // Handle signup error
+
+      localStorage.setItem("token", data.token);
+      navigate("/home");
+    } catch (err) {
+      console.error("Signup failed:", err);
+      setError(
+        err.response?.data?.message || "Unable to create your account. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto my-12 p-8 border border-gray-300 rounded-lg shadow-lg bg-white">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">User Sign Up</h1>
-      {error && <p className="text-red-500 text-center mb-4">{error}</p>} {/* Display error message */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <label htmlFor='name'>Enter your name</label>
-        <input 
-          type='text' 
-          id='name' 
-          value={name} 
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          required
-        />
-        <label htmlFor='email'>Enter your Email</label>
-        <input 
-          type='email' 
-          id='email' 
-          value={email} 
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          required
-        />
-        <label htmlFor='password'>Enter your Password</label>
-        <input 
-          type='password' 
-          id='password' 
-          value={password} 
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          required
-        />
-        <div className='flex justify-center'>
-          <button 
-            type='submit'  
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Sign Up
-          </button>
+    <div className="auth-page">
+
+      {/* LEFT BRANDING PANEL */}
+      <section className="auth-brand-panel">
+        <div className="auth-brand-content">
+
+          <Link to="/" className="auth-brand-logo">
+            <FaFeatherAlt />
+            <span>My Blog</span>
+          </Link>
+
+          <div className="auth-brand-message">
+            <span className="auth-brand-tagline">
+              A NEW CHAPTER BEGINS
+            </span>
+
+            <h1>
+              Your story starts with a <span>single word.</span>
+            </h1>
+
+            <p>
+              Create your space, share your perspective,
+              and connect with ideas worth exploring.
+              Every great writer starts somewhere.
+            </p>
+
+            <div className="auth-brand-quote">
+              <span className="auth-quote-mark">“</span>
+              <p>
+                A little space for a lot of creativity.
+              </p>
+            </div>
+          </div>
+
+          <div className="auth-brand-footer">
+            Read. Write. Share. Inspire.
+          </div>
+
         </div>
-      </form>
+      </section>
+
+
+      {/* RIGHT SIGNUP PANEL */}
+      <section className="auth-form-panel">
+        <div className="auth-form-container">
+
+          <div className="auth-mobile-logo">
+            <FaFeatherAlt />
+            <span>My Blog</span>
+          </div>
+
+          <div className="auth-heading">
+            <span className="auth-eyebrow">
+              JOIN OUR COMMUNITY
+            </span>
+
+            <h2>Let's create your account.</h2>
+
+            <p>
+              Join a community of curious minds and storytellers.
+            </p>
+          </div>
+
+          {error && (
+            <div className="auth-error">
+              {error}
+            </div>
+          )}
+
+          <form className="auth-form" onSubmit={handleSubmit}>
+
+            {/* NAME */}
+            <div className="auth-field">
+              <label htmlFor="name">Full Name</label>
+
+              <div className="auth-input-wrapper">
+                <FaUser />
+
+                <input
+                  type="text"
+                  id="name"
+                  placeholder="What should we call you?"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* EMAIL */}
+            <div className="auth-field">
+              <label htmlFor="email">Email Address</label>
+
+              <div className="auth-input-wrapper">
+                <FaEnvelope />
+
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* PASSWORD */}
+            <div className="auth-field">
+              <label htmlFor="password">Password</label>
+
+              <div className="auth-input-wrapper">
+                <FaLock />
+
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="Create a password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* SUBMIT */}
+            <button
+              type="submit"
+              className="auth-submit-btn"
+              disabled={loading}
+            >
+              {loading ? "Creating account..." : "Create My Account"}
+
+              {!loading && <FaArrowRight />}
+            </button>
+
+          </form>
+
+          <div className="auth-switch">
+            Already have an account?
+            <Link to="/login">Log in</Link>
+          </div>
+
+        </div>
+      </section>
+
     </div>
   );
 };

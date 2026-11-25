@@ -1,20 +1,30 @@
-import jwt from 'jsonwebtoken';
+
+import jwt from "jsonwebtoken";
 
 const auth = (req, res, next) => {
-  const token = req.header('x-auth-token');
+  const token = req.header("x-auth-token");
 
   if (!token) {
-    return res.status(401).json({ msg: 'No token, authorization denied' });
+    return res.status(401).json({
+      msg: "No token, authorization denied",
+    });
   }
 
   try {
-    const decoded = jwt.verify(token, 'your_jwt_secret');
-    //here decoded will contain the payload which is inside the token when it was created.
-    //In our case it is the Id.
-    req.user = decoded.userId; 
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (!decoded.userId) {
+      return res.status(401).json({
+        msg: "Invalid token payload",
+      });
+    }
+
+    req.user = decoded.userId;
     next();
-  } catch (err) {
-    res.status(401).json({ msg: 'Token is not valid' });
+  } catch (error) {
+    return res.status(401).json({
+      msg: "Token is invalid or expired",
+    });
   }
 };
 

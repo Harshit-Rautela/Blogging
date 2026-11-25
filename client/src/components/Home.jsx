@@ -1,8 +1,10 @@
+
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { getUserBlogs } from "../services/BlogsApi";
 import Navbar from "./Navbar";
+import { FaPenNib, FaBookOpen, FaArrowRight } from "react-icons/fa";
 
 const Home = () => {
   const [user, setUser] = useState(null);
@@ -13,6 +15,7 @@ const Home = () => {
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem("token");
+
         if (!token) {
           navigate("/login");
           return;
@@ -24,6 +27,7 @@ const Home = () => {
             headers: { "x-auth-token": token },
           }
         );
+
         setUser(response.data);
 
         const userBlogs = await getUserBlogs(token);
@@ -33,56 +37,135 @@ const Home = () => {
         navigate("/login");
       }
     };
+
     fetchUserData();
   }, [navigate]);
 
-  if (!user)
+  if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        Loading...
+      <div className="home-loading">
+        <div className="loading-spinner"></div>
+        <p>Preparing your creative space...</p>
       </div>
     );
+  }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="home-page">
       <Navbar />
-      <div className="container mx-auto p-6 mt-16"> {/* Add margin-top here */}
-        <div className="bg-white shadow-lg rounded-lg p-6 mb-6">
-          <h1 className="text-3xl font-bold mb-2">Welcome, {user.name}</h1>
-          {/* <p className="text-gray-600">{user.email}</p> */}
-        </div>
 
-        <div className="bg-white shadow-lg rounded-lg p-6">
-          <h2 className="text-2xl font-bold mb-4">Your Blogs</h2>
-          <div className="flex space-x-4 mb-6">
-            <Link to="/create">
-              <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-6 rounded-full shadow-lg hover:from-purple-600 hover:to-blue-500 transition duration-300 transform hover:scale-105">
-                Create
-              </button>
-            </Link>
-            <Link to="/all-blogs">
-              <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-6 rounded-full shadow-lg hover:from-purple-600 hover:to-blue-500 transition duration-300 transform hover:scale-105">
-                All Blogs
-              </button>
+      <main className="home-container">
+
+        {/* Welcome Hero */}
+        <section className="home-hero">
+          <div className="hero-content">
+            <span className="section-eyebrow">
+              YOUR PERSONAL WRITING SPACE
+            </span>
+
+            <h1>
+              Welcome back,
+              <span> {user.name}.</span>
+            </h1>
+
+            <p>
+              Every great story starts with an idea.
+              What will you write today?
+            </p>
+
+            <Link to="/create" className="hero-create-btn">
+              <FaPenNib />
+              Start writing
+              <FaArrowRight />
             </Link>
           </div>
+
+          <div className="hero-decoration">
+            <div className="hero-icon-circle">
+              <FaPenNib />
+            </div>
+            <span>READ. WRITE. INSPIRE.</span>
+            <div className="hero-decoration-line"></div>
+          </div>
+        </section>
+
+        {/* Blog Statistics */}
+        <section className="home-stats">
+          <div className="stats-icon">
+            <FaBookOpen />
+          </div>
+
+          <div className="stats-content">
+            <span className="section-eyebrow">YOUR COLLECTION</span>
+            <h2>{blogs.length}</h2>
+            <p>{blogs.length === 1 ? "Published story" : "Published stories"}</p>
+          </div>
+
+          <Link to="/all-blogs" className="stats-link">
+            Explore all blogs <FaArrowRight />
+          </Link>
+        </section>
+
+        {/* Blog Collection */}
+        <section className="home-blogs-section">
+          <div className="blogs-heading">
+            <div>
+              <span className="section-eyebrow">
+                YOUR CREATIVE JOURNEY
+              </span>
+              <h2>Your stories</h2>
+              <p>A collection of thoughts, ideas and experiences.</p>
+            </div>
+
+            <Link to="/all-blogs" className="view-all-link">
+              View all <FaArrowRight />
+            </Link>
+          </div>
+
           {blogs.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="home-blogs-grid">
               {blogs.map((blog) => (
-                <div
+                <Link
+                  to={`/user/${blog._id}`}
                   key={blog._id}
-                  className="border rounded-lg p-4 bg-gray-100 hover:shadow-md transition-shadow duration-300"
+                  className="home-blog-card"
                 >
-                  <h3 className="text-xl font-semibold mb-2">{blog.title}</h3>
-                  <p className="text-gray-700">{blog.content}</p>
-                </div>
+                  <div className="blog-card-icon">
+                    <FaBookOpen />
+                  </div>
+
+                  <h3>{blog.title}</h3>
+
+                  <p>
+                    {blog.content?.length > 130
+                      ? `${blog.content.substring(0, 130)}...`
+                      : blog.content}
+                  </p>
+
+                  <span className="blog-card-read">
+                    Read story <FaArrowRight />
+                  </span>
+                </Link>
               ))}
             </div>
           ) : (
-            <p className="text-gray-600">No blogs found.</p>
+            <div className="empty-blogs">
+              <div className="empty-icon">
+                <FaPenNib />
+              </div>
+              <h3>Your first story starts here.</h3>
+              <p>
+                You haven't published anything yet.
+                Turn that idea in your head into a story.
+              </p>
+              <Link to="/create" className="empty-create-btn">
+                Create your first blog <FaArrowRight />
+              </Link>
+            </div>
           )}
-        </div>
-      </div>
+        </section>
+
+      </main>
     </div>
   );
 };

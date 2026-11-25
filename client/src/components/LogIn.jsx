@@ -1,54 +1,177 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { loginUser } from '../services/api'; // Import the login function
+
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  FaFeatherAlt,
+  FaEnvelope,
+  FaLock,
+  FaArrowRight,
+} from "react-icons/fa";
+
+import { loginUser } from "../services/api";
 
 const LogIn = () => {
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState(""); 
-  //const [success, setSuccess] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+
     try {
-      // Call the login API function
-      const data = await loginUser({ email, password});
-      // Store the token or handle login success
-      localStorage.setItem('token', data.token);
-      console.log('Login successful:', data);
-      navigate('/home');
-    } catch (error) {
-      console.error('Login failed:', error);
-      // Handle login error
+      const data = await loginUser({ email, password });
+
+      localStorage.setItem("token", data.token);
+
+      navigate("/home");
+    } catch (err) {
+      console.error("Login failed:", err);
+      setError(
+        err.response?.data?.message || "Invalid email or password. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
+    <div className="auth-page">
 
-    <div className="w-full max-w-md mx-auto my-12 p-8 border border-gray-300 rounded-lg shadow-lg bg-white">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">User Log In</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <label htmlFor='name'>Enter your name</label>
-        <input type='text' id='name' value={name} onChange={(e)=>setName(e.target.value)}
-        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-        required/>
-        <label htmlFor='email'>Enter your Email</label>
-        <input type='email' id='email' value={email} onChange={(e)=>setEmail(e.target.value)}
-        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-        required/>
-        <label htmlFor='password'>Enter your Password</label>
-        <input type='password' id='password' value={password} onChange={(e)=>setPassword(e.target.value)}
-        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-        required/>
-        
-        <div className='flex justify-center'>
-        <button type='submit'  className="mt-4 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Log In</button>
+      {/* LEFT BRANDING PANEL */}
+      <section className="auth-brand-panel">
+        <div className="auth-brand-content">
+
+          <Link to="/" className="auth-brand-logo">
+            <FaFeatherAlt />
+            <span>My Blog</span>
+          </Link>
+
+          <div className="auth-brand-message">
+            <span className="auth-brand-tagline">
+              YOUR WORDS. YOUR SPACE.
+            </span>
+
+            <h1>
+              Every great story deserves <span>another chapter.</span>
+            </h1>
+
+            <p>
+              Your ideas, your experiences, your voice.
+              Pick up where you left off and keep creating
+              something meaningful.
+            </p>
+
+            <div className="auth-brand-quote">
+              <span className="auth-quote-mark">“</span>
+              <p>
+                The world is waiting to hear your story.
+              </p>
+            </div>
+          </div>
+
+          <div className="auth-brand-footer">
+            Read. Write. Share. Inspire.
+          </div>
+
         </div>
-        
-      </form>
-    </div>
-  )
-}
+      </section>
 
-export default LogIn
+
+      {/* RIGHT LOGIN PANEL */}
+      <section className="auth-form-panel">
+        <div className="auth-form-container">
+
+          <div className="auth-mobile-logo">
+            <FaFeatherAlt />
+            <span>My Blog</span>
+          </div>
+
+          <div className="auth-heading">
+            <span className="auth-eyebrow">
+              WELCOME BACK
+            </span>
+
+            <h2>Good to see you again.</h2>
+
+            <p>
+              Sign in to continue your writing journey.
+            </p>
+          </div>
+
+          {error && (
+            <div className="auth-error">
+              {error}
+            </div>
+          )}
+
+          <form className="auth-form" onSubmit={handleSubmit}>
+
+            {/* EMAIL */}
+            <div className="auth-field">
+              <label htmlFor="email">Email Address</label>
+
+              <div className="auth-input-wrapper">
+                <FaEnvelope />
+
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* PASSWORD */}
+            <div className="auth-field">
+              <label htmlFor="password">Password</label>
+
+              <div className="auth-input-wrapper">
+                <FaLock />
+
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* SUBMIT */}
+            <button
+              type="submit"
+              className="auth-submit-btn"
+              disabled={loading}
+            >
+              {loading ? "Logging in..." : "Continue to My Blog"}
+
+              {!loading && <FaArrowRight />}
+            </button>
+
+          </form>
+
+          <div className="auth-switch">
+            New to My Blog?
+            <Link to="/sign-up">Create an account</Link>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  );
+};
+
+export default LogIn;

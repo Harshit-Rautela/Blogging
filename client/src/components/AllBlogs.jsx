@@ -1,98 +1,382 @@
-import React from "react";
-import { useEffect, useState } from "react";
+
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserBlogs } from "../services/BlogsApi";
 import BackButton from "./Buttons/BackButton";
-import { formToJSON } from "axios";
+import "./component.css";
+
+const PAGE_LIMIT = 9;
 
 const AllBlogs = () => {
   const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [tag, setTag] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageLimit: PAGE_LIMIT,
+    totalBlogs: 0,
+    totalPages: 1,
+  });
+
   const navigate = useNavigate();
 
   useEffect(() => {
+    let isActive = true;
+
     const fetchBlogs = async () => {
+      setLoading(true);
+      setError("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
+        const result = await getUserBlogs(token, {
+          page,
+          limit: PAGE_LIMIT,
+          search: search.trim(),
+          category: category.trim(),
+          tag: tag.trim(),
+        });
+
+        if (!isActive) return;
+
+        setBlogs(result.blogs);
+        setPagination(result.pagination);
+      } catch (err) {
+        if (!isActive) return;
+
+        if (err.response?.status === 401) {
+          localStorage.removeItem("token");
           navigate("/login");
           return;
         }
-        const userBlogs = await getUserBlogs(token);
-        setBlogs(userBlogs);
-      } catch (error) {
-        console.error("Failed to fetch blogs:", error);
-        navigate("/login");
+
+        setError(
+          err.response?.data?.msg ||
+          "We couldn't load your stories. Please try again."
+        );
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
-    fetchBlogs();
-  }, [navigate]);
 
-  // const handleDelete = async (id) => {
-  //   const token = localStorage.getItem("token");
-  //   await deleteBlog(id, token);
-  //   setBlogs(blogs.filter((blog) => blog._id !== id));
-  // };
+    // Small delay prevents an API request on every keystroke.
+    const timer = setTimeout(fetchBlogs, 350);
 
-  // const handleUpdate = (id) => {
-  //   navigate(`/update/${id}`);
-  // };
+    return () => {
+      isActive = false;
+      clearTimeout(timer);
+    };
+  }, [navigate, page, search, category, tag, retryKey]);
 
-  const backgroundImageUrl =
-    "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8YmxvZ2dpbmd8ZW58MHx8MHx8fDA%3D";
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleCategoryChange = (value) => {
+    setCategory(value);
+    setPage(1);
+  };
+
+  const handleTagChange = (value) => {
+    setTag(value);
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setSearch("");
+    setCategory("");
+    setTag("");
+    setPage(1);
+  };
+
+  const hasActiveFilters =
+    search.trim() || category.trim() || tag.trim();
+
+  const handleRetry = () => {
+    setPage((currentPage) => currentPage);
+    setError("");
+    // Changing a filter or page will trigger a new request.
+    // This key forces a retry without changing the visible filters.
+    setRetryKey((key) => key + 1);
+  };
+
+
+
+  const goToPage = (nextPage) => {
+    if (
+      nextPage >= 1 &&
+      nextPage <= pagination.totalPages &&
+      nextPage !== page
+    ) {
+      setPage(nextPage);
+    }
+  };
 
   return (
-    <div
-      className="relative min-h-screen bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url(${backgroundImageUrl})` }}
-    >
-      <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+    <div className="all-blogs-page">
+      <div className="blogs-bg-glow blogs-glow-one"></div>
+      <div className="blogs-bg-glow blogs-glow-two"></div>
 
-      <div className="relative container mx-auto py-12 px-6 text-white">
-        <h1 className="text-4xl font-bold text-center mb-8 animate__animated animate__fadeIn">
-          All Blogs
-        </h1>
-        <BackButton />
-        <br />
+      <div className="all-blogs-container">
+        <header className="all-blogs-header">
+          <div className="blogs-heading-content">
+            <span className="blogs-eyebrow">
+              YOUR CREATIVE COLLECTION
+            </span>
 
-        <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {blogs.length > 0 ? (
-            blogs.map((blog) => (
-              <div
-                key={blog._id}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-2 hover:scale-105"
+            <h1>
+              Explore Your <span>Stories.</span>
+            </h1>
+
+            <p>
+              Every story has a place. Revisit your ideas,
+              discover your writing, and keep creating something
+              meaningful.
+            </p>
+          </div>
+
+          <BackButton />
+        </header>
+
+        <section className="blogs-collection-section">
+          <div className="blogs-section-heading">
+            <div>
+              <h2>Your Collection</h2>
+              <p>
+                {pagination.totalBlogs}{" "}
+                {pagination.totalBlogs === 1 ? "story" : "stories"}{" "}
+                published
+              </p>
+            </div>
+
+            <button
+              className="blogs-create-button"
+              onClick={() => navigate("/create")}
+            >
+              <span>+</span> Create Story
+            </button>
+          </div>
+
+          {/* Search and filters */}
+          <div className="blogs-filter-panel">
+            <div className="blogs-search-wrapper">
+              <span className="blogs-search-icon">⌕</span>
+              <input
+                type="search"
+                placeholder="Search your stories..."
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                aria-label="Search blogs by title or content"
+              />
+            </div>
+
+            <div className="blogs-filter-fields">
+              <input
+                type="text"
+                placeholder="Filter by category"
+                value={category}
+                onChange={(e) => handleCategoryChange(e.target.value)}
+                aria-label="Filter by category"
+              />
+
+              <input
+                type="text"
+                placeholder="Filter by tag"
+                value={tag}
+                onChange={(e) => handleTagChange(e.target.value)}
+                aria-label="Filter by tag"
+              />
+
+              {hasActiveFilters && (
+                <button
+                  className="blogs-clear-button"
+                  onClick={clearFilters}
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="blogs-loading">
+              <div className="blogs-spinner"></div>
+              <p>Gathering your stories...</p>
+            </div>
+          ) : error ? (
+            <div className="blogs-empty-state">
+              <div className="empty-state-icon">!</div>
+              <h3>Something went wrong</h3>
+              <p>{error}</p>
+              <button
+                className="blogs-empty-button"
+                onClick={handleRetry}
               >
-                <div className="p-6 text-gray-800">
-                  <h2 className="text-xl font-semibold mb-2">{blog.title}</h2>
-                  <p className="text-gray-600 mb-4">
-                    {blog.content.substring(0, 100)}...
-                  </p>
-                  <div className="flex justify-between">
-                    <button
-                      onClick={() => navigate(`/user/${blog._id}`)} // Updated path to match the new route
-                      className="text-white bg-indigo-600 hover:bg-indigo-700 font-semibold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
-                    >
-                      Read More
-                    </button>
-                    <button
-                      onClick={() => navigate(`/user/update/${blog._id}`)}
-                      className="text-white bg-green-600 hover:bg-green-700 font-semibold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
-                    >
-                      Update
-                    </button>
-                    <button
-                      onClick={() =>navigate(`/user/delete/${blog._id}`)}
-                      className="text-white bg-red-600 hover:bg-red-700 font-semibold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
+                Try Again
+              </button>
+            </div>
+          ) : blogs.length > 0 ? (
+            <>
+              <div className="blogs-results-info">
+                <p>
+                  Showing {blogs.length} of {pagination.totalBlogs}{" "}
+                  {pagination.totalBlogs === 1 ? "story" : "stories"}
+                </p>
+
+                {hasActiveFilters && (
+                  <span className="blogs-filter-active">
+                    Filters applied
+                  </span>
+                )}
               </div>
-            ))
+
+              <div className="blogs-grid">
+                {blogs.map((blog, index) => (
+                  <article
+                    className="blog-card"
+                    key={blog._id}
+                    style={{ "--card-index": index }}
+                  >
+                    <div className="blog-card-top">
+                      <span className="blog-card-number">
+                        STORY{" "}
+                        {String(
+                          (page - 1) * PAGE_LIMIT + index + 1
+                        ).padStart(2, "0")}
+                      </span>
+
+                      <div className="blog-card-icon">✦</div>
+                    </div>
+
+                    <div className="blog-card-content">
+                      <h3>{blog.title}</h3>
+                      <p>
+                        {String(blog.content || "").slice(0, 150)}
+                        {String(blog.content || "").length > 150
+                          ? "..."
+                          : ""}
+                      </p>
+                    </div>
+
+                    <div className="blog-card-divider"></div>
+
+                    <div className="blog-card-actions">
+                      <button
+                        className="blog-read-button"
+                        onClick={() =>
+                          navigate(`/user/${blog._id}`)
+                        }
+                      >
+                        Read Story <span>→</span>
+                      </button>
+
+                      <div className="blog-secondary-actions">
+                        <button
+                          className="blog-edit-button"
+                          onClick={() =>
+                            navigate(`/user/update/${blog._id}`)
+                          }
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          className="blog-delete-button"
+                          onClick={() =>
+                            navigate(`/user/delete/${blog._id}`)
+                          }
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {pagination.totalPages > 1 && (
+                <div className="blogs-pagination">
+                  <button
+                    className="blogs-page-button"
+                    onClick={() => goToPage(page - 1)}
+                    disabled={page <= 1}
+                  >
+                    ← Previous
+                  </button>
+
+                  <div className="blogs-page-indicator">
+                    <span>Page</span>
+                    <strong>{page}</strong>
+                    <span>of {pagination.totalPages}</span>
+                  </div>
+
+                  <button
+                    className="blogs-page-button"
+                    onClick={() => goToPage(page + 1)}
+                    disabled={page >= pagination.totalPages}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
-            <p className="text-center text-gray-300">No blogs found.</p>
+            <div className="blogs-empty-state">
+              <div className="empty-state-icon">
+                {hasActiveFilters ? "⌕" : "✦"}
+              </div>
+
+              <h3>
+                {hasActiveFilters
+                  ? "No stories found."
+                  : "Your story starts here."}
+              </h3>
+
+              <p>
+                {hasActiveFilters
+                  ? "We couldn't find any stories matching your search or filters. Try changing them."
+                  : "You haven't published any stories yet. Start writing and let your ideas take shape."}
+              </p>
+
+              {hasActiveFilters ? (
+                <button
+                  className="blogs-empty-button"
+                  onClick={clearFilters}
+                >
+                  Clear Filters
+                </button>
+              ) : (
+                <button
+                  className="blogs-empty-button"
+                  onClick={() => navigate("/create")}
+                >
+                  Create Your First Story
+                </button>
+              )}
+            </div>
           )}
-        </div>
+        </section>
+
+        <footer className="all-blogs-footer">
+          <span>MY BLOG</span>
+          <p>Read. Write. Inspire.</p>
+        </footer>
       </div>
     </div>
   );

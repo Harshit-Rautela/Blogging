@@ -1,28 +1,89 @@
-// src/pages/GetStartedPage.jsx
-import React from 'react';
-import { Link } from 'react-router-dom';
+
+import React from "react";
+import { Link } from "react-router-dom";
+import { FaPenNib, FaArrowRight, FaBookOpen } from "react-icons/fa";
+
+import "./Header.css";
 
 const GettingStarted = () => {
-  const backgroundImageUrl = 'https://images.unsplash.com/photo-1620287341260-a9ecadfe7a17?w=1000&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8YmxvZ2dpbmd8ZW58MHx8MHx8fDA%3D'; // Replace with your desired image URL
-
   return (
-    <div className="relative bg-cover bg-center h-screen" style={{ backgroundImage: `url(${backgroundImageUrl})` }}>
-      <div className="absolute inset-0 bg-black bg-opacity-60"></div>
-      <div className="relative container mx-auto flex flex-col items-center justify-center h-full text-center">
-        <h1 className="text-4xl font-bold text-white mb-6">Get Started with My Blog</h1>
-        <p className="text-lg text-white mb-12">Choose an option below to begin</p>
-        <div className="space-y-4">
-          <Link to="/sign-up">
-            <button className="bg-blue-600 text-white py-3 px-8 rounded-lg shadow-lg hover:bg-blue-700 transition duration-300">
-              Sign Up
-            </button>
-          </Link>
-          <Link to="/login">
-            <button className="bg-green-600 text-white py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 transition duration-300">
+    <div className="getting-started">
+
+      {/* Decorative Background */}
+      <div className="hero-decoration hero-decoration-one"></div>
+      <div className="hero-decoration hero-decoration-two"></div>
+
+      <div className="hero-container">
+
+        {/* Left Content */}
+        <div className="hero-content">
+
+          <div className="hero-badge">
+            <FaPenNib />
+            <span>Your stories deserve a place</span>
+          </div>
+
+          <h1 className="hero-title">
+            Ideas become
+            <span> stories.</span>
+            <br />
+            Stories become
+            <span> impact.</span>
+          </h1>
+
+          <p className="hero-description">
+            Welcome to My Blog — a space to express your thoughts,
+            share your experiences, and discover interesting
+            perspectives from others.
+          </p>
+
+          <div className="hero-buttons">
+
+            <Link to="/sign-up" className="hero-btn hero-btn-primary">
+              Get Started
+              <FaArrowRight />
+            </Link>
+
+            <Link to="/login" className="hero-btn hero-btn-secondary">
               Log In
-            </button>
-          </Link>
+            </Link>
+
+          </div>
+
+          <div className="hero-footer-note">
+            <FaBookOpen />
+            <span>Read. Write. Share. Inspire.</span>
+          </div>
+
         </div>
+
+        {/* Right Visual */}
+        <div className="hero-visual">
+
+          <div className="hero-image-card">
+
+            <img
+              src="https://images.unsplash.com/photo-1455390582262-044cdead277a?w=1000&auto=format&fit=crop&q=85"
+              alt="A notebook and writing desk"
+            />
+
+            <div className="hero-image-overlay">
+              <span>YOUR CREATIVE SPACE</span>
+              <h2>Every great story starts with an idea.</h2>
+            </div>
+
+          </div>
+
+          <div className="hero-floating-card">
+            <FaPenNib />
+            <div>
+              <strong>Start writing</strong>
+              <span>Your next story awaits</span>
+            </div>
+          </div>
+
+        </div>
+
       </div>
     </div>
   );
