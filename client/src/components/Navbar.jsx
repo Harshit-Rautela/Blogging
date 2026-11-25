@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   FaPenNib,
@@ -8,8 +8,8 @@ import {
   FaBookOpen,
   FaSignOutAlt,
   FaBars,
+  FaSearch,
 } from "react-icons/fa";
-import { useState } from "react";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -27,16 +27,16 @@ const Navbar = () => {
       <div className="navbar-inner">
 
         {/* Brand */}
-
         <Link to="/home" className="navbar-brand" onClick={closeMenu}>
           <span className="navbar-brand-icon">
             <FaPenNib />
           </span>
-          <span>My Blog<span className="brand-dot">.</span></span>
+          <span>
+            My Blog<span className="brand-dot">.</span>
+          </span>
         </Link>
 
         {/* Mobile Menu Toggle */}
-
         <button
           className="navbar-menu-toggle"
           onClick={() => setMenuOpen(!menuOpen)}
@@ -47,8 +47,8 @@ const Navbar = () => {
         </button>
 
         {/* Navigation Links */}
-
         <div className={`navbar-links ${menuOpen ? "navbar-links-open" : ""}`}>
+
           <NavLink
             to="/home"
             className={({ isActive }) =>
@@ -82,15 +82,30 @@ const Navbar = () => {
             <span>All Blogs</span>
           </NavLink>
 
+          {/* Discover Writers */}
+          <NavLink
+            to="/discover"
+            className={({ isActive }) =>
+              `navbar-link ${isActive ? "navbar-link-active" : ""}`
+            }
+            onClick={closeMenu}
+          >
+            <FaSearch />
+            <span>Discover Writers</span>
+          </NavLink>
+
           <button
             className="navbar-logout"
-            onClick={handleLogout}
+            onClick={() => {
+              closeMenu();
+              handleLogout();
+            }}
           >
             <FaSignOutAlt />
             <span>Logout</span>
           </button>
-        </div>
 
+        </div>
       </div>
     </nav>
   );

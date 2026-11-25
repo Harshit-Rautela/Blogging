@@ -18,6 +18,8 @@ import GettingStarted from "./components/Header/GettingStarted";
 import DetailedBlog from "./components/DetailedBlog";
 import UpdateBlog from "./components/UpdateBlog";
 import DeleteBlog from "./components/DeleteBlog";
+import DiscoverUsers from "./components/DiscoverUsers";
+import PublicProfile from "./components/PublicProfile";
 
 function App() {
   return (
@@ -29,11 +31,13 @@ function App() {
           <Route path="/all-blogs" element={<AllBlogs />} />
           <Route path="/login" element={<Login />} />
           <Route path="/sign-up" element={<SignUp />} />
-          <Route path="/home" element={<Home/>} />
-          <Route path="/user/:id" element={<DetailedBlog/>} />
-          <Route path="/user/update/:id" element={<UpdateBlog/>} />
-          <Route path="/user/delete/:id" element={<DeleteBlog/>} />
-          <Route path="/get-started" element={<GettingStarted/>} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/user/:id" element={<DetailedBlog />} />
+          <Route path="/user/update/:id" element={<UpdateBlog />} />
+          <Route path="/user/delete/:id" element={<DeleteBlog />} />
+          <Route path="/get-started" element={<GettingStarted />} />
+          <Route path="/discover" element={<DiscoverUsers />} />
+          <Route path="/users/:userId" element={<PublicProfile />} />
         </Routes>
       </Router>
     </div>
