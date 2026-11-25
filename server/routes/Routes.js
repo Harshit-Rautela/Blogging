@@ -54,10 +54,29 @@ router.get("/user", auth, async (req, res) => {
       });
     }
 
-    // Search and filters
+
     const search = String(req.query.search || "").trim();
     const category = String(req.query.category || "").trim();
     const tag = String(req.query.tag || "").trim();
+
+    // Sorting
+    const sortBy = String(req.query.sortBy || "newest");
+
+    const sortOptionsMap = {
+      newest: { createdAt: -1 },
+      oldest: { createdAt: 1 },
+      title_asc: { title: 1 },
+      title_desc: { title: -1 },
+    };
+
+    if (!Object.prototype.hasOwnProperty.call(sortOptionsMap, sortBy)) {
+      return res.status(400).json({
+        msg: "Invalid sorting option.",
+      });
+    }
+
+    const sortOptions = sortOptionsMap[sortBy];
+
 
     // Escape special regex characters
     const escapeRegex = (value) =>
@@ -99,7 +118,7 @@ router.get("/user", auth, async (req, res) => {
     // Fetch filtered blogs and filtered count
     const [blogs, totalBlogs] = await Promise.all([
       Blog.find(query)
-        .sort({ createdAt: -1 })
+        .sort(sortOptions)
         .skip(skip)
         .limit(limit),
 
