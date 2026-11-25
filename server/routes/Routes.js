@@ -1,5 +1,6 @@
 import express from "express";
 import { Blog } from "../models/Model.js";
+import { Comment } from "../models/Comment.js";
 import auth from "../middleware/Auth.js";
 import { upload } from "../middleware/FileAuth.js";
 // import { uploadOnCloudinary } from "../utils/Cloudinary.js";
@@ -167,26 +168,37 @@ router.get("/user", auth, async (req, res) => {
 });
 
 // Get a blog by ID
-router.get("/:id", auth, async (req, res) => {
-  const { id } = req.params;
 
+router.get("/:id", auth, async (req, res) => {
   try {
+    const { id } = req.params;
+
     const blog = await Blog.findById(id);
 
     if (!blog) {
-      return res.status(404).json({ msg: "Blog not found" });
+      return res.status(404).json({
+        msg: "Blog not found",
+      });
     }
 
-    if (blog.authorId.toString() !== req.user) {
-      return res.status(401).json({ msg: "Unauthorized" });
+    const isOwner = blog.authorId.toString() === req.user;
+
+    // Published blogs can be viewed by other logged-in users.
+    // Drafts remain private to their owners.
+    if (blog.status !== "published" && !isOwner) {
+      return res.status(403).json({
+        msg: "You are not allowed to view this blog.",
+      });
     }
 
-    res.json(blog);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server error");
+    return res.status(200).json(blog);
+  } catch (error) {
+    return res.status(500).json({
+      msg: "Could not retrieve blog.",
+    });
   }
 });
+
 
 // Update a blog by ID
 
@@ -263,7 +275,66 @@ router.put("/:id", auth, upload.single("file"), async (req, res) => {
 
 // Delete a blog by ID
 
+
 router.delete("/:id", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const blog = await Blog.findById(id);
+
+    if (!blog) {
+      return res.status(404).json({
+        msg: "Blog not found.",
+      });
+    }
+
+    if (blog.authorId.toString() !== req.user) {
+      return res.status(403).json({
+        msg: "Unauthorized.",
+      });
+    }
+
+    // Delete the Cloudinary image first, if one exists.
+    if (blog.imagePublicId) {
+      try {
+        await deleteFromCloudinary(blog.imagePublicId);
+      } catch {
+        return res.status(500).json({
+          msg: "Could not delete the blog image. Blog was not deleted.",
+        });
+      }
+    }
+
+    // Delete the blog.
+    await Blog.findByIdAndDelete(id);
+
+    // Delete all comments associated with this blog.
+    let commentsCleanup = "completed";
+
+    try {
+      await Comment.deleteMany({ blogId: id });
+    } catch {
+      commentsCleanup = "pending";
+    }
+
+    return res.status(200).json({
+      msg: "Blog deleted successfully.",
+      commentsCleanup,
+    });
+  } catch {
+    return res.status(500).json({
+      msg: "Could not delete blog.",
+    });
+  }
+});
+
+
+
+// ==========================
+// LIKE A BLOG
+// ==========================
+
+router.post("/:id/like", auth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -275,31 +346,321 @@ router.delete("/:id", auth, async (req, res) => {
       });
     }
 
-    if (blog.authorId.toString() !== req.user) {
-      return res.status(401).json({
-        msg: "Unauthorized",
+    const userId = req.user;
+
+    // Prevent duplicate likes.
+    if (blog.likedBy.some((likedUserId) => likedUserId.toString() === userId)) {
+      return res.status(400).json({
+        msg: "You have already liked this blog.",
       });
     }
 
-    // Delete the blog's image from Cloudinary, if one exists.
-    if (blog.imagePublicId) {
-      try {
-        await deleteFromCloudinary(blog.imagePublicId);
-      } catch {
-        return res.status(500).json({
-          msg: "Could not delete the blog image. Blog was not deleted.",
-        });
-      }
-    }
+    blog.likedBy.push(userId);
 
-    await Blog.findByIdAndDelete(id);
+    await blog.save();
 
     return res.status(200).json({
-      msg: "Blog and associated image deleted successfully",
+      msg: "Blog liked successfully.",
+      likesCount: blog.likedBy.length,
+      isLiked: true,
     });
-  } catch {
+  } catch (error) {
     return res.status(500).json({
-      msg: "Cannot delete blog.",
+      msg: "Could not like blog.",
+    });
+  }
+});
+
+
+// ==========================
+// UNLIKE A BLOG
+// ==========================
+
+router.delete("/:id/like", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const blog = await Blog.findById(id);
+
+    if (!blog) {
+      return res.status(404).json({
+        msg: "Blog not found",
+      });
+    }
+
+    const userId = req.user;
+
+    const alreadyLiked = blog.likedBy.some(
+      (likedUserId) => likedUserId.toString() === userId
+    );
+
+    if (!alreadyLiked) {
+      return res.status(400).json({
+        msg: "You have not liked this blog.",
+      });
+    }
+
+    blog.likedBy = blog.likedBy.filter(
+      (likedUserId) => likedUserId.toString() !== userId
+    );
+
+    await blog.save();
+
+    return res.status(200).json({
+      msg: "Blog unliked successfully.",
+      likesCount: blog.likedBy.length,
+      isLiked: false,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      msg: "Could not unlike blog.",
+    });
+  }
+});
+
+
+// ==========================
+// GET BLOG LIKES
+// ==========================
+
+router.get("/:id/likes", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const blog = await Blog.findById(id)
+      .select("likedBy")
+      .lean();
+
+    if (!blog) {
+      return res.status(404).json({
+        msg: "Blog not found",
+      });
+    }
+
+    const userId = req.user;
+
+    const isLiked = blog.likedBy.some(
+      (likedUserId) => likedUserId.toString() === userId
+    );
+
+    return res.status(200).json({
+      likesCount: blog.likedBy.length,
+      isLiked,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      msg: "Could not retrieve blog likes.",
+    });
+  }
+});
+
+
+router.post("/:id/comments", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const content = String(req.body.content || "").trim();
+
+    const blog = await Blog.findById(id);
+
+    if (!blog) {
+      return res.status(404).json({
+        msg: "Blog not found.",
+      });
+    }
+
+    const isOwner = blog.authorId.toString() === req.user;
+
+    if (blog.status !== "published" && !isOwner) {
+      return res.status(403).json({
+        msg: "You cannot comment on this blog.",
+      });
+    }
+
+    if (!content) {
+      return res.status(400).json({
+        msg: "Comment cannot be empty.",
+      });
+    }
+
+    if (content.length > 1000) {
+      return res.status(400).json({
+        msg: "Comment cannot exceed 1000 characters.",
+      });
+    }
+
+    const comment = await Comment.create({
+      blogId: id,
+      userId: req.user,
+      content,
+    });
+
+    const populatedComment = await Comment.findById(comment._id)
+      .populate("userId", "name");
+
+    return res.status(201).json({
+      msg: "Comment added successfully.",
+      comment: populatedComment,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      msg: "Could not add comment.",
+    });
+  }
+});
+
+
+// B. GET COMMENTS FOR A BLOG
+
+router.get("/:id/comments", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const blog = await Blog.findById(id).select("authorId status");
+
+    if (!blog) {
+      return res.status(404).json({
+        msg: "Blog not found.",
+      });
+    }
+
+    const isOwner = blog.authorId.toString() === req.user;
+
+    if (blog.status !== "published" && !isOwner) {
+      return res.status(403).json({
+        msg: "You cannot view comments on this blog.",
+      });
+    }
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    if (
+      !Number.isInteger(page) ||
+      !Number.isInteger(limit) ||
+      page < 1 ||
+      limit < 1 ||
+      limit > 50
+    ) {
+      return res.status(400).json({
+        msg: "Invalid pagination parameters.",
+      });
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [comments, totalComments] = await Promise.all([
+      Comment.find({ blogId: id })
+        .populate("userId", "name")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+
+      Comment.countDocuments({ blogId: id }),
+    ]);
+
+    const totalPages = Math.max(
+      1,
+      Math.ceil(totalComments / limit)
+    );
+
+    res.set({
+      "X-Current-Page": String(page),
+      "X-Page-Limit": String(limit),
+      "X-Total-Comments": String(totalComments),
+      "X-Total-Pages": String(totalPages),
+    });
+
+    return res.status(200).json(comments);
+  } catch (error) {
+    return res.status(500).json({
+      msg: "Could not retrieve comments.",
+    });
+  }
+});
+
+
+// C. EDIT A COMMENT
+
+router.put("/comments/:commentId", auth, async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const content = String(req.body.content || "").trim();
+
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+      return res.status(404).json({
+        msg: "Comment not found.",
+      });
+    }
+
+    // Only the comment's author can edit it.
+    if (comment.userId.toString() !== req.user) {
+      return res.status(403).json({
+        msg: "You are not allowed to edit this comment.",
+      });
+    }
+
+    if (!content) {
+      return res.status(400).json({
+        msg: "Comment cannot be empty.",
+      });
+    }
+
+    if (content.length > 1000) {
+      return res.status(400).json({
+        msg: "Comment cannot exceed 1000 characters.",
+      });
+    }
+
+    comment.content = content;
+
+    const updatedComment = await comment.save();
+
+    const populatedComment = await Comment.findById(updatedComment._id)
+      .populate("userId", "name");
+
+    return res.status(200).json({
+      msg: "Comment updated successfully.",
+      comment: populatedComment,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      msg: "Could not update comment.",
+    });
+  }
+});
+
+
+// D. DELETE A COMMENT
+
+router.delete("/comments/:commentId", auth, async (req, res) => {
+  try {
+    const { commentId } = req.params;
+
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+      return res.status(404).json({
+        msg: "Comment not found.",
+      });
+    }
+
+    // Only the comment's author can delete it.
+    if (comment.userId.toString() !== req.user) {
+      return res.status(403).json({
+        msg: "You are not allowed to delete this comment.",
+      });
+    }
+
+    await Comment.findByIdAndDelete(commentId);
+
+    return res.status(200).json({
+      msg: "Comment deleted successfully.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      msg: "Could not delete comment.",
     });
   }
 });

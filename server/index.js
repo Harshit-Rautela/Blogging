@@ -40,6 +40,7 @@ app.use(
       "X-Current-Page",
       "X-Page-Limit",
       "X-Total-Blogs",
+      "X-Total-Comments",
       "X-Total-Pages",
     ],
   },

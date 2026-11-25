@@ -8,21 +8,6 @@ import auth from "../middleware/Auth.js";
 
 const router = express.Router();
 
-// Structured logger
-const logAuth = (event, details = {}) => {
-  const timestamp = new Date().toLocaleString();
-
-  console.log("\n==================================================");
-  console.log(`[AUTH] ${event}`);
-  console.log(`Time: ${timestamp}`);
-
-  Object.entries(details).forEach(([key, value]) => {
-    console.log(`${key}: ${value}`);
-  });
-
-  console.log("==================================================\n");
-};
-
 // Generate JWT
 const generateToken = (userId) => {
   return jwt.sign(
@@ -35,83 +20,78 @@ const generateToken = (userId) => {
 // Register a new user
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, email, password } = req.body;
 
     if (
       typeof name !== "string" ||
+      typeof username !== "string" ||
       typeof email !== "string" ||
       typeof password !== "string"
     ) {
-      logAuth("REGISTRATION FAILED", {
-        Reason: "Missing or invalid input types",
-      });
-
       return res.status(400).json({
-        msg: "Name, email, and password are required",
+        msg: "Name, username, email, and password are required.",
       });
     }
 
     const trimmedName = name.trim();
+    const normalizedUsername = username.trim().toLowerCase();
     const normalizedEmail = email.trim().toLowerCase();
 
-    if (!trimmedName || !normalizedEmail || !password) {
-      logAuth("REGISTRATION FAILED", {
-        Email: normalizedEmail || "Not provided",
-        Reason: "Empty required fields",
-      });
-
+    if (
+      !trimmedName ||
+      !normalizedUsername ||
+      !normalizedEmail ||
+      !password
+    ) {
       return res.status(400).json({
-        msg: "All fields are required",
+        msg: "All fields are required.",
       });
     }
 
     if (trimmedName.length > 50) {
-      logAuth("REGISTRATION FAILED", {
-        Email: normalizedEmail,
-        Reason: "Name exceeds 50 characters",
-      });
-
       return res.status(400).json({
-        msg: "Name cannot exceed 50 characters",
+        msg: "Name cannot exceed 50 characters.",
+      });
+    }
+
+    const usernameRegex = /^[a-z0-9_]{3,20}$/;
+
+    if (!usernameRegex.test(normalizedUsername)) {
+      return res.status(400).json({
+        msg: "Username must be 3–20 characters and contain only letters, numbers, and underscores.",
       });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailRegex.test(normalizedEmail)) {
-      logAuth("REGISTRATION FAILED", {
-        Email: normalizedEmail,
-        Reason: "Invalid email format",
-      });
-
       return res.status(400).json({
-        msg: "Please provide a valid email address",
+        msg: "Please provide a valid email address.",
       });
     }
 
     if (password.length < 8 || password.length > 72) {
-      logAuth("REGISTRATION FAILED", {
-        Email: normalizedEmail,
-        Reason: "Password length validation failed",
-      });
-
       return res.status(400).json({
-        msg: "Password must be between 8 and 72 characters",
+        msg: "Password must be between 8 and 72 characters.",
       });
     }
 
     const existingUser = await User.findOne({
-      email: normalizedEmail,
+      $or: [
+        { email: normalizedEmail },
+        { username: normalizedUsername },
+      ],
     });
 
     if (existingUser) {
-      logAuth("REGISTRATION FAILED", {
-        Email: normalizedEmail,
-        Reason: "Email already registered",
-      });
+      if (existingUser.email === normalizedEmail) {
+        return res.status(409).json({
+          msg: "An account with this email already exists.",
+        });
+      }
 
       return res.status(409).json({
-        msg: "User already exists",
+        msg: "This username is already taken.",
       });
     }
 
@@ -119,6 +99,7 @@ router.post("/register", async (req, res) => {
 
     const user = new User({
       name: trimmedName,
+      username: normalizedUsername,
       email: normalizedEmail,
       passwordHash,
     });
@@ -127,42 +108,33 @@ router.post("/register", async (req, res) => {
 
     const token = generateToken(user._id.toString());
 
-    logAuth("REGISTRATION SUCCESSFUL", {
-      Name: user.name,
-      Email: user.email,
-      UserID: user._id,
-      Status: "New account created",
-    });
-
     return res.status(201).json({
       token,
       user: {
+        _id: user._id,
         name: user.name,
-        email: user.email,
+        username: user.username,
       },
     });
   } catch (error) {
     if (error.code === 11000) {
-      logAuth("REGISTRATION FAILED", {
-        Reason: "Duplicate email detected by database",
-      });
+      const duplicateField = Object.keys(error.keyPattern || {})[0];
 
       return res.status(409).json({
-        msg: "User already exists",
+        msg:
+          duplicateField === "username"
+            ? "This username is already taken."
+            : "An account with this email already exists.",
       });
     }
 
-    logAuth("REGISTRATION ERROR", {
-      Error: error.message,
-    });
-
     return res.status(500).json({
-      msg: "Server error",
+      msg: "Unable to create your account.",
     });
   }
 });
 
-// Login
+// Login — email and password only
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -173,13 +145,8 @@ router.post("/login", async (req, res) => {
       !email.trim() ||
       !password
     ) {
-      logAuth("LOGIN FAILED", {
-        Email: typeof email === "string" ? email.trim() : "Not provided",
-        Reason: "Missing or invalid credentials",
-      });
-
       return res.status(400).json({
-        msg: "Email and password are required",
+        msg: "Email and password are required.",
       });
     }
 
@@ -190,13 +157,8 @@ router.post("/login", async (req, res) => {
     });
 
     if (!user) {
-      logAuth("LOGIN FAILED", {
-        Email: normalizedEmail,
-        Reason: "Account not found",
-      });
-
       return res.status(401).json({
-        msg: "Invalid credentials",
+        msg: "Invalid credentials.",
       });
     }
 
@@ -206,33 +168,19 @@ router.post("/login", async (req, res) => {
     );
 
     if (!isMatch) {
-      logAuth("LOGIN FAILED", {
-        Email: normalizedEmail,
-        Reason: "Incorrect password",
-      });
-
       return res.status(401).json({
-        msg: "Invalid credentials",
+        msg: "Invalid credentials.",
       });
     }
 
     const token = generateToken(user._id.toString());
 
-    logAuth("LOGIN SUCCESSFUL", {
-      Name: user.name,
-      Email: user.email,
-      UserID: user._id,
-      Status: "User authenticated",
+    return res.status(200).json({
+      token,
     });
-
-    return res.json({ token });
   } catch (error) {
-    logAuth("LOGIN ERROR", {
-      Error: error.message,
-    });
-
     return res.status(500).json({
-      msg: "Server error",
+      msg: "Unable to log in.",
     });
   }
 });
@@ -241,34 +189,18 @@ router.post("/login", async (req, res) => {
 router.get("/me", auth, async (req, res) => {
   try {
     const user = await User.findById(req.user)
-      .select("-passwordHash");
+      .select("-passwordHash -email");
 
     if (!user) {
-      logAuth("PROFILE FETCH FAILED", {
-        UserID: req.user,
-        Reason: "User not found",
-      });
-
       return res.status(404).json({
-        msg: "User not found",
+        msg: "User not found.",
       });
     }
 
-    logAuth("PROFILE FETCH SUCCESSFUL", {
-      Name: user.name,
-      Email: user.email,
-      UserID: user._id,
-    });
-
-    return res.json(user);
+    return res.status(200).json(user);
   } catch (error) {
-    logAuth("PROFILE FETCH ERROR", {
-      UserID: req.user,
-      Error: error.message,
-    });
-
     return res.status(500).json({
-      msg: "Server error",
+      msg: "Unable to retrieve your profile.",
     });
   }
 });

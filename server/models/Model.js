@@ -14,6 +14,16 @@ const UserSchema = new mongoose.Schema(
       minlength: [2, "Name must be at least 2 characters"],
       maxlength: [50, "Name cannot exceed 50 characters"]
     },
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      minlength: 3,
+      maxlength: 20,
+      match: /^[a-zA-Z0-9_]+$/,
+    },
 
     email: {
       type: String,
@@ -98,7 +108,13 @@ const BlogSchema = new mongoose.Schema(
       type: [String],
       default: []
     },
-
+    likedBy: {
+      type: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+      }],
+      default: []
+    },
     // Estimated reading time in minutes
     readingTime: {
       type: Number,

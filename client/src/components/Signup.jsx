@@ -7,6 +7,7 @@ import {
   FaEnvelope,
   FaLock,
   FaArrowRight,
+  FaAt,
 } from "react-icons/fa";
 
 import { signupUser } from "../services/api";
@@ -15,6 +16,7 @@ const Signup = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -26,14 +28,19 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      const data = await signupUser({ name, email, password });
+      const data = await signupUser({
+        name,
+        username,
+        email,
+        password,
+      });
 
       localStorage.setItem("token", data.token);
       navigate("/home");
     } catch (err) {
       console.error("Signup failed:", err);
       setError(
-        err.response?.data?.message || "Unable to create your account. Please try again."
+        err.response?.data?.msg || "Unable to create your account. Please try again."
       );
     } finally {
       setLoading(false);
@@ -129,6 +136,34 @@ const Signup = () => {
                   required
                 />
               </div>
+            </div>
+            {/* USERNAME */}
+            <div className="auth-field">
+              <label htmlFor="username">Username</label>
+
+              <div className="auth-input-wrapper">
+                <FaAt />
+
+                <input
+                  type="text"
+                  id="username"
+                  placeholder="Choose a unique username"
+                  value={username}
+                  onChange={(e) =>
+                    setUsername(
+                      e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "")
+                    )
+                  }
+                  autoComplete="username"
+                  minLength={3}
+                  maxLength={20}
+                  pattern="[a-z0-9_]{3,20}"
+                  title="Use 3–20 letters, numbers, or underscores."
+                  required
+                />
+              </div>
+
+              <small>3–20 characters. Letters, numbers and underscores only.</small>
             </div>
 
             {/* EMAIL */}
