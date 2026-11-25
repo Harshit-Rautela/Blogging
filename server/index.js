@@ -25,28 +25,28 @@ const allowedOrigins = [
   "http://localhost:5173",
 ];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests without an Origin header (e.g. server-to-server)
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-      return callback(new Error("Not allowed by CORS"));
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
-    exposedHeaders: [
-      "X-Current-Page",
-      "X-Page-Limit",
-      "X-Total-Blogs",
-      "X-Total-Comments",
-      "X-Total-Pages",
-    ],
+    const error = new Error("Not allowed by CORS");
+    error.status = 403;
+    return callback(error);
   },
-  )
-);
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
+  exposedHeaders: [
+    "X-Current-Page",
+    "X-Page-Limit",
+    "X-Total-Blogs",
+    "X-Total-Comments",
+    "X-Total-Pages",
+  ],
+};
+
+app.use(cors(corsOptions));
 
 // Body parsing
 app.use(express.json({ limit: "1mb" }));
@@ -63,36 +63,70 @@ app.get("/", (req, res) => {
   });
 });
 
-
 // Routes
 app.use("/auth", Userrouter);
 app.use("/users", UserDiscoveryRouter);
 app.use("/", Blogrouter);
+
 // Handle unknown routes
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "Route not found",
-  });
+app.use((req, res, next) => {
+  const error = new Error("Route not found");
+  error.status = 404;
+  next(error);
 });
 
 // Centralized error handler
 app.use((err, req, res, next) => {
-  console.error("Server Error:", err);
-
-  if (err.message === "Not allowed by CORS") {
-    return res.status(403).json({
-      success: false,
-      message: "Origin not allowed",
-    });
+  if (res.headersSent) {
+    return next(err);
   }
 
-  res.status(err.status || 500).json({
+  let statusCode = err.status || err.statusCode || 500;
+  let message = err.message || "Internal server error";
+
+  // CORS errors
+  if (err.message === "Not allowed by CORS") {
+    statusCode = 403;
+    message = "Origin not allowed";
+  }
+
+  // Mongoose validation errors
+  else if (err.name === "ValidationError") {
+    statusCode = 400;
+    message = "Validation failed";
+  }
+
+  // Invalid MongoDB ObjectId
+  else if (err.name === "CastError") {
+    statusCode = 400;
+    message = "Invalid resource ID";
+  }
+
+  // Duplicate MongoDB values
+  else if (err.code === 11000) {
+    statusCode = 409;
+    message = "A record with this value already exists";
+  }
+
+  // Invalid JSON request body
+  else if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    statusCode = 400;
+    message = "Invalid JSON request body";
+  }
+
+  // Prevent invalid status codes
+  if (statusCode < 400 || statusCode > 599) {
+    statusCode = 500;
+  }
+
+  // Hide internal error details in production
+  if (statusCode >= 500 && process.env.NODE_ENV === "production") {
+    message = "Internal server error";
+  }
+
+  res.status(statusCode).json({
     success: false,
-    message:
-      process.env.NODE_ENV === "production"
-        ? "Internal server error"
-        : err.message,
+    message,
   });
 });
 
@@ -101,13 +135,8 @@ const startServer = async () => {
   try {
     await mongoose.connect(MongoDBURL);
 
-    console.log("Connected to MongoDB successfully");
-
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
+    app.listen(PORT);
   } catch (error) {
-    console.error("Failed to start server:", error);
     process.exit(1);
   }
 };
