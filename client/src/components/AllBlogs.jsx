@@ -5,6 +5,7 @@ import { getUserBlogs } from "../services/BlogsApi";
 import BackButton from "./Buttons/BackButton";
 import "./component.css";
 
+import { FaHeart } from "react-icons/fa"; 
 const PAGE_LIMIT = 9;
 
 const AllBlogs = () => {
@@ -290,6 +291,10 @@ const AllBlogs = () => {
                           ? "..."
                           : ""}
                       </p>
+                    </div>
+                    <div className="blog-card-likes">
+                      <FaHeart />
+                      <span>{blog.likedBy?.length || 0}</span>
                     </div>
 
                     <div className="blog-card-divider"></div>

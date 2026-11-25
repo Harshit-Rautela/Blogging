@@ -166,3 +166,77 @@ export const getBlogLikes = async (id, token) => {
 
   return response.data;
 };
+
+
+// Add a comment
+export const addComment = async (blogId, content, token) => {
+  const response = await axios.post(
+    `${BACKEND_BASE_URL}/${blogId}/comments`,
+    { content },
+    {
+      headers: {
+        "x-auth-token": token,
+      },
+    }
+  );
+
+  return response.data;
+};
+
+// Get comments with pagination
+export const getBlogComments = async (
+  blogId,
+  token,
+  page = 1,
+  limit = 10
+) => {
+  const response = await axios.get(
+    `${BACKEND_BASE_URL}/${blogId}/comments`,
+    {
+      headers: {
+        "x-auth-token": token,
+      },
+      params: { page, limit },
+    }
+  );
+
+  return {
+    comments: response.data,
+    pagination: {
+      currentPage: Number(response.headers["x-current-page"]) || 1,
+      pageLimit: Number(response.headers["x-page-limit"]) || 10,
+      totalComments:
+        Number(response.headers["x-total-comments"]) || 0,
+      totalPages: Number(response.headers["x-total-pages"]) || 1,
+    },
+  };
+};
+
+// Edit a comment
+export const updateComment = async (commentId, content, token) => {
+  const response = await axios.put(
+    `${BACKEND_BASE_URL}/comments/${commentId}`,
+    { content },
+    {
+      headers: {
+        "x-auth-token": token,
+      },
+    }
+  );
+
+  return response.data;
+};
+
+// Delete a comment
+export const deleteComment = async (commentId, token) => {
+  const response = await axios.delete(
+    `${BACKEND_BASE_URL}/comments/${commentId}`,
+    {
+      headers: {
+        "x-auth-token": token,
+      },
+    }
+  );
+
+  return response.data;
+};

@@ -495,7 +495,7 @@ router.post("/:id/comments", auth, async (req, res) => {
     });
 
     const populatedComment = await Comment.findById(comment._id)
-      .populate("userId", "name");
+      .populate("userId", "name username");
 
     return res.status(201).json({
       msg: "Comment added successfully.",
@@ -550,7 +550,7 @@ router.get("/:id/comments", auth, async (req, res) => {
 
     const [comments, totalComments] = await Promise.all([
       Comment.find({ blogId: id })
-        .populate("userId", "name")
+        .populate("userId", "name username")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -618,7 +618,7 @@ router.put("/comments/:commentId", auth, async (req, res) => {
     const updatedComment = await comment.save();
 
     const populatedComment = await Comment.findById(updatedComment._id)
-      .populate("userId", "name");
+      .populate("userId", "name username");
 
     return res.status(200).json({
       msg: "Comment updated successfully.",
