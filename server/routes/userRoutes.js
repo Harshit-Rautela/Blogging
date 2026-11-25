@@ -6,8 +6,6 @@ import { User, Blog } from "../models/Model.js";
 import auth from "../middleware/Auth.js";
 
 const router = express.Router();
-// Login rate limiter: 10 attempts per 15 minutes
-
 
 // Escape special regex characters in user search input
 const escapeRegex = (value) => {
@@ -16,7 +14,37 @@ const escapeRegex = (value) => {
 
 // Validate MongoDB ObjectId
 const isValidObjectId = (id) => {
-  return mongoose.Types.ObjectId.isValid(id);
+  return mongoose.isValidObjectId(id);
+};
+
+// Validate pagination parameters
+const validatePagination = (query, defaultLimit = 10) => {
+  const pageValue = query.page;
+  const limitValue = query.limit;
+
+  const page =
+    pageValue === undefined ? 1 :
+    typeof pageValue === "string" && /^\d+$/.test(pageValue)
+      ? Number(pageValue)
+      : NaN;
+
+  const limit =
+    limitValue === undefined ? defaultLimit :
+    typeof limitValue === "string" && /^\d+$/.test(limitValue)
+      ? Number(limitValue)
+      : NaN;
+
+  if (
+    !Number.isSafeInteger(page) ||
+    !Number.isSafeInteger(limit) ||
+    page < 1 ||
+    limit < 1 ||
+    limit > 20
+  ) {
+    return null;
+  }
+
+  return { page, limit };
 };
 
 // Search users by name or username
@@ -27,11 +55,27 @@ router.get("/search", auth, async (req, res) => {
         ? req.query.search.trim()
         : "";
 
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(
-      20,
-      Math.max(1, parseInt(req.query.limit, 10) || 10)
-    );
+    if (req.query.search !== undefined && typeof req.query.search !== "string") {
+      return res.status(400).json({
+        msg: "Invalid search query.",
+      });
+    }
+
+    if (search.length > 50) {
+      return res.status(400).json({
+        msg: "Search query cannot exceed 50 characters.",
+      });
+    }
+
+    const pagination = validatePagination(req.query, 10);
+
+    if (!pagination) {
+      return res.status(400).json({
+        msg: "Invalid pagination parameters.",
+      });
+    }
+
+    const { page, limit } = pagination;
 
     if (!search) {
       return res.status(200).json({
@@ -42,12 +86,6 @@ router.get("/search", auth, async (req, res) => {
           totalUsers: 0,
           totalPages: 0,
         },
-      });
-    }
-
-    if (search.length > 50) {
-      return res.status(400).json({
-        msg: "Search query cannot exceed 50 characters.",
       });
     }
 
@@ -136,6 +174,16 @@ router.get("/:userId/blogs", auth, async (req, res) => {
       });
     }
 
+    const pagination = validatePagination(req.query, 9);
+
+    if (!pagination) {
+      return res.status(400).json({
+        msg: "Invalid pagination parameters.",
+      });
+    }
+
+    const { page, limit } = pagination;
+
     const userExists = await User.exists({ _id: userId });
 
     if (!userExists) {
@@ -143,12 +191,6 @@ router.get("/:userId/blogs", auth, async (req, res) => {
         msg: "User not found.",
       });
     }
-
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(
-      20,
-      Math.max(1, parseInt(req.query.limit, 10) || 9)
-    );
 
     const filter = {
       authorId: userId,
