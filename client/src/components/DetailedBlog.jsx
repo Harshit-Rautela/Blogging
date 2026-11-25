@@ -1,9 +1,13 @@
 
-// src/components/DetailedBlog.jsx
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getBlogById } from "../services/BlogsApi";
+import {
+  getBlogById,
+  getBlogLikes,
+  likeBlog,
+  unlikeBlog,
+} from "../services/BlogsApi";
+import { FaHeart } from "react-icons/fa";
 import BackButton from "./Buttons/BackButton";
 import "./component.css";
 
@@ -15,7 +19,15 @@ const DetailedBlog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Like states
+  const [likesCount, setLikesCount] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
+  const [likeError, setLikeError] = useState("");
+
   useEffect(() => {
+    let isMounted = true;
+
     const fetchBlog = async () => {
       const token = localStorage.getItem("token");
 
@@ -26,17 +38,71 @@ const DetailedBlog = () => {
 
       try {
         const fetchedBlog = await getBlogById(id, token);
+
+        if (!isMounted) return;
+
         setBlog(fetchedBlog);
-      } catch (err) {
-        console.error("Failed to fetch blog:", err);
-        setError("Unable to load this blog. Please try again.");
+
+        // Fetch likes separately so a likes error
+        // does not prevent the article from loading.
+        try {
+          const likesData = await getBlogLikes(id, token);
+
+          if (!isMounted) return;
+
+          setLikesCount(likesData.likesCount);
+          setIsLiked(likesData.isLiked);
+        } catch {
+          if (isMounted) {
+            setLikeError("Unable to load likes.");
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setError("Unable to load this blog. Please try again.");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchBlog();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id, navigate]);
+
+  const handleLike = async () => {
+    if (likeLoading) return;
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    setLikeLoading(true);
+    setLikeError("");
+
+    try {
+      const response = isLiked
+        ? await unlikeBlog(id, token)
+        : await likeBlog(id, token);
+
+      setLikesCount(response.likesCount);
+      setIsLiked(response.isLiked);
+    } catch (err) {
+      setLikeError(
+        err.response?.data?.msg || "Unable to update your like. Please try again."
+      );
+    } finally {
+      setLikeLoading(false);
+    }
+  };
 
   const formatDate = (date) => {
     if (!date) return "Not available";
@@ -156,6 +222,46 @@ const DetailedBlog = () => {
           </div>
 
         </article>
+
+        {/* Like Section */}
+
+        <section className="detailed-engagement">
+
+          <div className="detailed-like-section">
+
+            <button
+              type="button"
+              className={`detailed-like-button ${
+                isLiked ? "detailed-like-active" : ""
+              }`}
+              onClick={handleLike}
+              disabled={likeLoading}
+              aria-label={isLiked ? "Unlike this blog" : "Like this blog"}
+              aria-pressed={isLiked}
+            >
+              <FaHeart />
+              <span>
+                {likeLoading
+                  ? "Updating..."
+                  : isLiked
+                  ? "Liked"
+                  : "Like"}
+              </span>
+            </button>
+
+            <span className="detailed-likes-count">
+              {likesCount} {likesCount === 1 ? "Like" : "Likes"}
+            </span>
+
+          </div>
+
+          {likeError && (
+            <p className="detailed-like-error" role="alert">
+              {likeError}
+            </p>
+          )}
+
+        </section>
 
         {/* Bottom Section */}
 

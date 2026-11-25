@@ -121,3 +121,48 @@ export const deleteBlog = async (id, token) => {
     throw error;
   }
 };
+
+
+
+// Like a blog
+export const likeBlog = async (id, token) => {
+  const response = await axios.post(
+    `${BACKEND_BASE_URL}/${id}/like`,
+    {},
+    {
+      headers: {
+        "x-auth-token": token,
+      },
+    }
+  );
+
+  return response.data;
+};
+
+// Unlike a blog
+export const unlikeBlog = async (id, token) => {
+  const response = await axios.delete(
+    `${BACKEND_BASE_URL}/${id}/like`,
+    {
+      headers: {
+        "x-auth-token": token,
+      },
+    }
+  );
+
+  return response.data;
+};
+
+// Get likes information for a blog
+export const getBlogLikes = async (id, token) => {
+  const response = await axios.get(
+    `${BACKEND_BASE_URL}/${id}/likes`,
+    {
+      headers: {
+        "x-auth-token": token,
+      },
+    }
+  );
+
+  return response.data;
+};
