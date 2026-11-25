@@ -2,7 +2,10 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { rateLimit } from "express-rate-limit";
+import {
+  loginLimiter,
+  registerLimiter,
+} from "../middleware/rateLimiters.js";
 import { User } from "../models/Model.js";
 import auth from "../middleware/Auth.js";
 

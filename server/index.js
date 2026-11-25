@@ -7,8 +7,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import { fileURLToPath } from "url";
 import helmet from "helmet";
-import { rateLimit } from "express-rate-limit";
-
+import { apiLimiter } from "./middleware/rateLimiters.js";
 import { MongoDBURL } from "./config.js";
 import Blogrouter from "./routes/Routes.js";
 import Userrouter from "./routes/auth.js";
